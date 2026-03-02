@@ -1,5 +1,3 @@
-<p align="center"><img src="docs/assets/logo.svg" width="120" alt="Mnemora" /></p>
-
 <h1 align="center">mnemora</h1>
 
 <p align="center"><strong>Serverless memory for AI agents. One API, four memory types, zero servers.</strong></p>
