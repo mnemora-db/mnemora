@@ -1,0 +1,2193 @@
+openapi: 3.1.0
+
+info:
+  title: Mnemora API
+  version: 0.1.0
+  description: >
+    AI agent memory database — unified API for working, semantic, episodic, and
+    procedural memory. One API key gives your agent access to four memory stores:
+    DynamoDB-backed key-value state, Aurora pgvector semantic search, DynamoDB+S3
+    episodic time-series, and relational procedural schemas.
+
+
+    **Authentication**: all endpoints except `GET /v1/health` require a Bearer
+    token in the `Authorization` header.
+
+
+    **Response envelope**: every response wraps its payload in
+    `{"data": ..., "meta": {"request_id": "...", "latency_ms": N}}`.
+    Errors use `{"error": {"code": "...", "message": "..."}, "meta": {...}}`.
+
+
+    **Tenant isolation**: `tenant_id` is always derived from your API key by the
+    Lambda authorizer. Never include it in request bodies — it is injected
+    server-side.
+  contact:
+    name: Mnemora Support
+    url: https://mnemora.dev
+    email: support@mnemora.dev
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: https://api.mnemora.dev
+    description: Production
+  - url: https://your-api-id.execute-api.us-east-1.amazonaws.com
+    description: Self-hosted (replace with your CDK output)
+
+security:
+  - BearerAuth: []
+
+# ---------------------------------------------------------------------------
+# Tags
+# ---------------------------------------------------------------------------
+tags:
+  - name: Health
+    description: Service liveness check — no authentication required.
+  - name: Working Memory
+    description: >
+      Key-value agent state backed by DynamoDB. Supports optimistic locking via
+      a `version` field and configurable TTL. Maximum item size: 400 KB.
+  - name: Semantic Memory
+    description: >
+      Vector-search memory backed by Aurora Serverless v2 + pgvector. Content is
+      automatically embedded with Bedrock Titan Text Embeddings v2 (1024 dims).
+      Near-duplicate content (cosine similarity > 0.95) is deduplicated in place.
+  - name: Episodic Memory
+    description: >
+      Time-series episode log backed by DynamoDB (hot, 48-hour TTL) with S3
+      archival. Supports time-range queries, per-session replay, and summarization
+      to semantic memory via Bedrock Claude Haiku.
+  - name: Unified Memory
+    description: >
+      Auto-routing endpoint and combined views across all memory stores. POST
+      /v1/memory inspects payload shape to decide which store to write to. GET
+      /v1/memory/{agent_id} fetches from all three stores in a single request.
+  - name: Usage
+    description: Per-tenant usage statistics for the current billing period.
+
+# ---------------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------------
+paths:
+
+  # -------------------------------------------------------------------------
+  # Health
+  # -------------------------------------------------------------------------
+  /v1/health:
+    get:
+      operationId: getHealth
+      tags: [Health]
+      summary: Health check
+      description: >
+        Returns service status, API version, and current UTC timestamp. This
+        endpoint is unauthenticated and suitable for load-balancer health probes.
+      security: []
+      responses:
+        "200":
+          description: Service is healthy.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthEnvelope"
+              example:
+                data:
+                  status: ok
+                  version: 0.1.0
+                  timestamp: "2026-03-02T14:23:01.456789+00:00"
+                meta:
+                  request_id: abc123xyz
+                  latency_ms: 2
+
+  # -------------------------------------------------------------------------
+  # Working Memory (State)
+  # -------------------------------------------------------------------------
+  /v1/state:
+    post:
+      operationId: createState
+      tags: [Working Memory]
+      summary: Create agent state
+      description: >
+        Stores a new working memory state item in DynamoDB. If `session_id` is
+        omitted, a UUID is auto-generated. The item is created at `version: 1`.
+        Maximum request body size is 400 KB (DynamoDB item limit).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StateCreateRequest"
+            example:
+              agent_id: agent-42
+              session_id: sess-abc
+              data:
+                messages: []
+                context: "user is asking about refunds"
+              ttl_hours: 24
+      responses:
+        "201":
+          description: State created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StateResponseEnvelope"
+              example:
+                data:
+                  agent_id: agent-42
+                  session_id: sess-abc
+                  data:
+                    messages: []
+                    context: "user is asking about refunds"
+                  version: 1
+                  created_at: "2026-03-02T14:23:01+00:00"
+                  updated_at: "2026-03-02T14:23:01+00:00"
+                  expires_at: "2026-03-03T14:23:01+00:00"
+                meta:
+                  request_id: abc123xyz
+                  latency_ms: 18
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/state/{agent_id}:
+    get:
+      operationId: getState
+      tags: [Working Memory]
+      summary: Get agent state
+      description: >
+        Retrieves the current state for an agent session. If `session_id` is
+        omitted, the handler returns the `default` session.
+      parameters:
+        - $ref: "#/components/parameters/AgentIdPath"
+        - name: session_id
+          in: query
+          required: false
+          schema:
+            type: string
+            default: default
+          description: >
+            Session identifier. Defaults to `default` when omitted.
+          example: sess-abc
+      responses:
+        "200":
+          description: State found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StateResponseEnvelope"
+              example:
+                data:
+                  agent_id: agent-42
+                  session_id: sess-abc
+                  data:
+                    messages: []
+                    context: "user is asking about refunds"
+                  version: 3
+                  created_at: "2026-03-02T14:23:01+00:00"
+                  updated_at: "2026-03-02T14:25:44+00:00"
+                  expires_at: null
+                meta:
+                  request_id: abc123xyz
+                  latency_ms: 9
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    put:
+      operationId: updateState
+      tags: [Working Memory]
+      summary: Update agent state (optimistic locking)
+      description: >
+        Updates an existing state item using optimistic locking. You must supply
+        the current `version` integer. If another request has already incremented
+        the version, you receive `409 Conflict`. On success, `version` is
+        incremented by 1 in the response.
+      parameters:
+        - $ref: "#/components/parameters/AgentIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StateUpdateRequest"
+            example:
+              session_id: sess-abc
+              data:
+                messages:
+                  - role: user
+                    content: "How do I cancel my subscription?"
+              version: 3
+              ttl_hours: 48
+      responses:
+        "200":
+          description: State updated. Response contains the new version number.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StateResponseEnvelope"
+              example:
+                data:
+                  agent_id: agent-42
+                  session_id: sess-abc
+                  data:
+                    messages:
+                      - role: user
+                        content: "How do I cancel my subscription?"
+                  version: 4
+                  created_at: "2026-03-02T14:23:01+00:00"
+                  updated_at: "2026-03-02T14:27:11+00:00"
+                  expires_at: "2026-03-04T14:27:11+00:00"
+                meta:
+                  request_id: abc123xyz
+                  latency_ms: 14
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: >
+            Version conflict. Another request updated this item since you last
+            read it. Re-fetch the current state, merge your changes, and retry.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+              example:
+                error:
+                  code: VERSION_CONFLICT
+                  message: "Version conflict — state was modified by another request"
+                meta:
+                  request_id: abc123xyz
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/state/{agent_id}/sessions:
+    get:
+      operationId: listSessions
+      tags: [Working Memory]
+      summary: List agent sessions
+      description: >
+        Returns all session IDs that have state stored for the given agent under
+        your tenant. Useful for building session pickers or auditing active
+        sessions.
+      parameters:
+        - $ref: "#/components/parameters/AgentIdPath"
+      responses:
+        "200":
+          description: Session list returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionListEnvelope"
+              example:
+                data:
+                  agent_id: agent-42
+                  sessions:
+                    - session_id: sess-abc
+                      created_at: "2026-03-01T09:00:00+00:00"
+                      updated_at: "2026-03-02T14:27:11+00:00"
+                    - session_id: default
+                      created_at: "2026-02-28T12:00:00+00:00"
+                      updated_at: "2026-02-28T12:05:00+00:00"
+                  count: 2
+                meta:
+                  request_id: abc123xyz
+                  latency_ms: 11
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/state/{agent_id}/{session_id}:
+    delete:
+      operationId: deleteState
+      tags: [Working Memory]
+      summary: Delete a session
+      description: >
+        Permanently deletes a single session's state from DynamoDB. Returns 404
+        if the session does not exist. The operation is not reversible.
+      parameters:
+        - $ref: "#/components/parameters/AgentIdPath"
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Session identifier to delete.
+          example: sess-abc
+      responses:
+        "200":
+          description: Session deleted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StateDeleteEnvelope"
+              example:
+                data:
+                  deleted: true
+                  agent_id: agent-42
+                  session_id: sess-abc
+                meta:
+                  request_id: abc123xyz
+                  latency_ms: 8
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # -------------------------------------------------------------------------
+  # Semantic Memory
+  # -------------------------------------------------------------------------
+  /v1/memory/semantic:
+    post:
+      operationId: createSemanticMemory
+      tags: [Semantic Memory]
+      summary: Store semantic memory
+      description: >
+        Embeds `content` with Bedrock Titan Text Embeddings v2 (1024 dims) and
+        stores the result in Aurora pgvector. Content exceeding ~8,000 tokens is
+        split into overlapping chunks; each chunk is stored as a separate row
+        linked by a shared `parent_id` in `metadata`.
+
+
+        **Deduplication**: if a memory with cosine similarity > 0.95 already
+        exists for the same agent, that row is updated in place and the response
+        includes `deduplicated: true`. The HTTP status is `200` for a dedup
+        update and `201` for a new insert.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SemanticCreateRequest"
+            example:
+              agent_id: agent-42
+              content: "The user prefers concise responses and dislikes bullet lists."
+              namespace: preferences
+              metadata:
+                source: system_prompt
+      responses:
+        "201":
+          description: New semantic memory created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SemanticResponseEnvelope"
+              example:
+                data:
+                  id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                  agent_id: agent-42
+                  content: "The user prefers concise responses and dislikes bullet lists."
+                  namespace: preferences
+                  metadata:
+                    source: system_prompt
+                  similarity_score: null
+                  created_at: "2026-03-02T14:23:01.123456+00:00"
+                  updated_at: "2026-03-02T14:23:01.123456+00:00"
+                  deduplicated: false
+                meta:
+                  request_id: abc123xyz
+                  latency_ms: 210
+        "200":
+          description: >
+            Existing memory updated in place (deduplicated). The response body
+            has the same shape as 201 but `deduplicated` is `true`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SemanticResponseEnvelope"
+              example:
+                data:
+                  id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                  agent_id: agent-42
+                  content: "The user prefers concise responses and dislikes bullet lists."
+                  namespace: preferences
+                  metadata:
+                    source: system_prompt
+                  similarity_score: null
+                  created_at: "2026-03-01T09:00:00.000000+00:00"
+                  updated_at: "2026-03-02T14:23:01.123456+00:00"
+                  deduplicated: true
+                meta:
+                  request_id: abc123xyz
+                  latency_ms: 195
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/memory/semantic/search:
+    post:
+      operationId: searchSemanticMemory
+      tags: [Semantic Memory]
+      summary: Vector similarity search
+      description: >
+        Embeds `query` with Bedrock Titan and runs a cosine similarity search
+        against pgvector using an HNSW index. Results are sorted by similarity
+        score descending. Use `threshold` to filter out low-confidence matches.
+        Optional `metadata_filter` applies a JSONB containment check
+        (`metadata @> filter`) before scoring.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SemanticSearchRequest"
+            example:
+              query: "user communication preferences"
+              agent_id: agent-42
+              namespace: preferences
+              top_k: 5
+              threshold: 0.7
+              metadata_filter:
+                source: system_prompt
+      responses:
+        "200":
+          description: Search results returned, sorted by similarity score descending.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SemanticSearchResultsEnvelope"
+              example:
+                data:
+                  results:
+                    - id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                      agent_id: agent-42
+                      content: "The user prefers concise responses and dislikes bullet lists."
+                      namespace: preferences
+                      metadata:
+                        source: system_prompt
+                      similarity_score: 0.94
+                      created_at: "2026-03-01T09:00:00.000000+00:00"
+                      updated_at: "2026-03-02T14:23:01.123456+00:00"
+                      deduplicated: false
+                  count: 1
+                meta:
+                  request_id: abc123xyz
+                  latency_ms: 58
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/memory/semantic/{id}:
+    get:
+      operationId: getSemanticMemory
+      tags: [Semantic Memory]
+      summary: Get semantic memory by ID
+      description: >
+        Retrieves a single semantic memory row by its UUID. Returns 404 if the
+        record does not exist or has been soft-deleted.
+      parameters:
+        - $ref: "#/components/parameters/MemoryIdPath"
+      responses:
+        "200":
+          description: Memory found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SemanticResponseEnvelope"
+              example:
+                data:
+                  id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                  agent_id: agent-42
+                  content: "The user prefers concise responses and dislikes bullet lists."
+                  namespace: preferences
+                  metadata:
+                    source: system_prompt
+                  similarity_score: null
+                  created_at: "2026-03-01T09:00:00.000000+00:00"
+                  updated_at: "2026-03-02T14:23:01.123456+00:00"
+                  deduplicated: false
+                meta:
+                  request_id: abc123xyz
+                  latency_ms: 12
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      operationId: deleteSemanticMemory
+      tags: [Semantic Memory]
+      summary: Soft-delete semantic memory
+      description: >
+        Sets `is_deleted = TRUE` on the target row and bumps `updated_at`. The
+        row remains in Aurora for audit purposes but is excluded from all reads
+        and searches. Returns 404 if the record does not exist or is already
+        deleted.
+      parameters:
+        - $ref: "#/components/parameters/MemoryIdPath"
+      responses:
+        "204":
+          description: Memory soft-deleted. No response body.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # -------------------------------------------------------------------------
+  # Episodic Memory
+  # -------------------------------------------------------------------------
+  /v1/memory/episodic:
+    post:
+      operationId: createEpisode
+      tags: [Episodic Memory]
+      summary: Store an episode
+      description: >
+        Appends a new episode to the time-series log for an agent session.
+        Episodes are written to DynamoDB with a 48-hour hot TTL and archived
+        to S3 for long-term storage. The `type` field must be one of:
+        `conversation`, `action`, `observation`, `tool_call`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EpisodeCreateRequest"
+            examples:
+              conversation:
+                summary: Conversation turn
+                value:
+                  agent_id: agent-42
+                  session_id: sess-abc
+                  type: conversation
+                  content: "User asked about cancellation policy"
+                  metadata:
+                    turn: 3
+              tool_call:
+                summary: Tool invocation
+                value:
+                  agent_id: agent-42
+                  session_id: sess-abc
+                  type: tool_call
+                  content:
+                    tool: search_knowledge_base
+                    args:
+                      query: cancellation policy
+                  metadata: {}
+      responses:
+        "201":
+          description: Episode stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EpisodeResponseEnvelope"
+              example:
+                data:
+                  id: "ep-7f3a1b2c"
+                  agent_id: agent-42
+                  session_id: sess-abc
+                  type: conversation
+                  content: "User asked about cancellation policy"
+                  metadata:
+                    turn: 3
+                  timestamp: "2026-03-02T14:23:01.456789+00:00"
+                meta:
+                  request_id: abc123xyz
+                  latency_ms: 22
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/memory/episodic/{agent_id}:
+    get:
+      operationId: queryEpisodes
+      tags: [Episodic Memory]
+      summary: Query episodes
+      description: >
+        Returns episodes for an agent with optional time-range and type filters.
+        Results are sorted chronologically. Default `limit` is 50; maximum is
+        500. Use `from` and `to` for time-range queries (ISO 8601 format).
+      parameters:
+        - $ref: "#/components/parameters/AgentIdPath"
+        - name: session_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Restrict results to a specific session. Uses a DynamoDB GSI.
+          example: sess-abc
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [conversation, action, observation, tool_call]
+          description: Filter by episode type.
+          example: conversation
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: >
+            Lower bound timestamp, inclusive (ISO 8601). Example:
+            `2026-03-01T00:00:00Z`.
+          example: "2026-03-01T00:00:00Z"
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: >
+            Upper bound timestamp, inclusive (ISO 8601). Example:
+            `2026-03-02T23:59:59Z`.
+          example: "2026-03-02T23:59:59Z"
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 50
+          description: Maximum number of episodes to return.
+          example: 50
+      responses:
+        "200":
+          description: Episode list returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EpisodeListEnvelope"
+              example:
+                data:
+                  episodes:
+                    - id: "ep-7f3a1b2c"
+                      agent_id: agent-42
+                      session_id: sess-abc
+                      type: conversation
+                      content: "User asked about cancellation policy"
+                      metadata:
+                        turn: 3
+                      timestamp: "2026-03-02T14:23:01.456789+00:00"
+                  count: 1
+                meta:
+                  request_id: abc123xyz
+                  latency_ms: 17
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/memory/episodic/{agent_id}/sessions/{session_id}:
+    get:
+      operationId: replaySession
+      tags: [Episodic Memory]
+      summary: Session replay
+      description: >
+        Returns every episode for a given session in chronological order.
+        Use this to reconstruct the full interaction sequence for debugging,
+        evaluation, or fine-tuning dataset generation.
+      parameters:
+        - $ref: "#/components/parameters/AgentIdPath"
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Session identifier to replay.
+          example: sess-abc
+      responses:
+        "200":
+          description: Session episodes returned in chronological order.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionReplayEnvelope"
+              example:
+                data:
+                  session_id: sess-abc
+                  episodes:
+                    - id: "ep-7f3a1b2c"
+                      agent_id: agent-42
+                      session_id: sess-abc
+                      type: conversation
+                      content: "User asked about cancellation policy"
+                      metadata:
+                        turn: 3
+                      timestamp: "2026-03-02T14:23:01.456789+00:00"
+                    - id: "ep-9d4e2f1a"
+                      agent_id: agent-42
+                      session_id: sess-abc
+                      type: tool_call
+                      content:
+                        tool: search_knowledge_base
+                        args:
+                          query: cancellation policy
+                      metadata: {}
+                      timestamp: "2026-03-02T14:23:03.789012+00:00"
+                  count: 2
+                meta:
+                  request_id: abc123xyz
+                  latency_ms: 14
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/memory/episodic/{agent_id}/summarize:
+    post:
+      operationId: summarizeEpisodes
+      tags: [Episodic Memory]
+      summary: Summarize episodes to semantic memory
+      description: >
+        Fetches the most recent `num_episodes` episodes for an agent, calls
+        Bedrock Claude Haiku to generate a narrative summary, then stores that
+        summary as a new semantic memory record in Aurora pgvector. Returns the
+        generated summary text, the episode count included, the new semantic
+        memory ID, and the time range covered.
+      parameters:
+        - $ref: "#/components/parameters/AgentIdPath"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EpisodeSummaryRequest"
+            example:
+              num_episodes: 50
+              target_length: 500
+      responses:
+        "200":
+          description: Summary generated and stored as semantic memory.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EpisodeSummaryEnvelope"
+              example:
+                data:
+                  summary: >
+                    The user contacted support about cancelling their subscription.
+                    The agent retrieved the cancellation policy from the knowledge
+                    base and confirmed the 30-day refund window.
+                  episode_count: 7
+                  semantic_memory_id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                  time_range:
+                    from: "2026-03-02T14:23:01+00:00"
+                    to: "2026-03-02T14:27:44+00:00"
+                meta:
+                  request_id: abc123xyz
+                  latency_ms: 1840
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # -------------------------------------------------------------------------
+  # Unified Memory
+  # -------------------------------------------------------------------------
+  /v1/memory:
+    post:
+      operationId: createMemory
+      tags: [Unified Memory]
+      summary: Auto-route memory creation
+      description: >
+        Inspects the request body and routes to the correct memory store.
+        Routing rules evaluated in order:
+
+
+        1. `data` (object) **and** `session_id` (string) → **working memory**
+           (DynamoDB state)
+
+        2. `content` (string) **and** `type` in
+           `[conversation, action, observation, tool_call]` → **episodic memory**
+
+        3. `content` (string) **without** `type` → **semantic memory**
+
+
+        Returns `400` with code `UNROUTABLE_PAYLOAD` if none of the rules match.
+        The response includes a `memory_type` field indicating which store was
+        used.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnifiedMemoryCreateRequest"
+            examples:
+              working_memory:
+                summary: Route to working memory
+                value:
+                  agent_id: agent-42
+                  session_id: sess-abc
+                  data:
+                    step: 3
+                    awaiting: user_confirmation
+              episodic_memory:
+                summary: Route to episodic memory
+                value:
+                  agent_id: agent-42
+                  session_id: sess-abc
+                  type: action
+                  content: "Called search_knowledge_base with query: refund policy"
+                  metadata: {}
+              semantic_memory:
+                summary: Route to semantic memory
+                value:
+                  agent_id: agent-42
+                  content: "User consistently prefers email over phone support"
+                  namespace: preferences
+                  metadata:
+                    confidence: high
+      responses:
+        "201":
+          description: Memory stored. Includes `memory_type` field.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnifiedCreateResponseEnvelope"
+              example:
+                data:
+                  agent_id: agent-42
+                  session_id: sess-abc
+                  data:
+                    step: 3
+                    awaiting: user_confirmation
+                  version: 1
+                  created_at: "2026-03-02T14:23:01+00:00"
+                  updated_at: "2026-03-02T14:23:01+00:00"
+                  expires_at: null
+                  memory_type: state
+                meta:
+                  request_id: abc123xyz
+                  latency_ms: 21
+        "400":
+          description: Validation error or unroutable payload.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+              examples:
+                validation_error:
+                  summary: Field validation failed
+                  value:
+                    error:
+                      code: VALIDATION_ERROR
+                      message: "agent_id: field required"
+                    meta:
+                      request_id: abc123xyz
+                unroutable:
+                  summary: Cannot determine memory type
+                  value:
+                    error:
+                      code: UNROUTABLE_PAYLOAD
+                      message: >
+                        Cannot determine memory type from payload. For working
+                        memory: provide 'data' (dict) and 'session_id'. For
+                        episodic memory: provide 'content' (str) and 'type'
+                        (conversation|action|observation|tool_call). For semantic
+                        memory: provide 'content' (str) without 'type'.
+                    meta:
+                      request_id: abc123xyz
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/memory/search:
+    post:
+      operationId: searchMemory
+      tags: [Unified Memory]
+      summary: Cross-memory search
+      description: >
+        Searches across semantic memory (vector similarity via pgvector) and
+        episodic memory (substring text match on content). Results are merged:
+        semantic results appear first sorted by similarity score descending,
+        followed by episodic results sorted by timestamp descending. Each result
+        includes a `memory_type` field (`semantic` or `episodic`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnifiedSearchRequest"
+            example:
+              query: "user cancellation preference"
+              agent_id: agent-42
+              top_k: 10
+              threshold: 0.5
+      responses:
+        "200":
+          description: Merged results from semantic and episodic stores.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnifiedSearchResultsEnvelope"
+              example:
+                data:
+                  results:
+                    - id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                      agent_id: agent-42
+                      content: "The user prefers concise responses and dislikes bullet lists."
+                      namespace: preferences
+                      metadata:
+                        source: system_prompt
+                      similarity_score: 0.87
+                      created_at: "2026-03-01T09:00:00+00:00"
+                      updated_at: "2026-03-02T14:23:01+00:00"
+                      deduplicated: false
+                      memory_type: semantic
+                    - id: "ep-7f3a1b2c"
+                      agent_id: agent-42
+                      session_id: sess-abc
+                      type: conversation
+                      content: "User asked about cancellation policy"
+                      metadata:
+                        turn: 3
+                      timestamp: "2026-03-02T14:23:01+00:00"
+                      memory_type: episodic
+                      relevance: text_match
+                  count: 2
+                meta:
+                  request_id: abc123xyz
+                  latency_ms: 76
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/memory/{agent_id}:
+    get:
+      operationId: getAgentMemory
+      tags: [Unified Memory]
+      summary: Get all memory for an agent
+      description: >
+        Returns a combined snapshot of all memory stores for an agent in a
+        single request:
+
+
+        - **state**: current working memory for the `default` session (null if
+          none exists)
+
+        - **semantic**: 5 most recent semantic memories by `created_at`
+
+        - **episodic**: last 10 episodes by timestamp
+
+
+        If an individual store is temporarily unavailable, that key returns an
+        empty/null value and the store's failure is described in the optional
+        `warnings` array. The overall request still succeeds with partial data.
+      parameters:
+        - $ref: "#/components/parameters/AgentIdPath"
+      responses:
+        "200":
+          description: Combined memory snapshot returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentMemoryEnvelope"
+              example:
+                data:
+                  agent_id: agent-42
+                  state:
+                    agent_id: agent-42
+                    session_id: default
+                    data:
+                      step: 3
+                    version: 2
+                    created_at: "2026-03-01T09:00:00+00:00"
+                    updated_at: "2026-03-02T14:00:00+00:00"
+                    expires_at: null
+                  semantic:
+                    - id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                      agent_id: agent-42
+                      content: "The user prefers concise responses."
+                      namespace: preferences
+                      metadata: {}
+                      similarity_score: null
+                      created_at: "2026-03-02T14:23:01+00:00"
+                      updated_at: "2026-03-02T14:23:01+00:00"
+                      deduplicated: false
+                  episodic:
+                    - id: "ep-7f3a1b2c"
+                      agent_id: agent-42
+                      session_id: sess-abc
+                      type: conversation
+                      content: "User asked about cancellation policy"
+                      metadata:
+                        turn: 3
+                      timestamp: "2026-03-02T14:23:01+00:00"
+                  summary:
+                    state_exists: true
+                    semantic_count: 1
+                    episodic_count: 1
+                meta:
+                  request_id: abc123xyz
+                  latency_ms: 94
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      operationId: purgeAgentMemory
+      tags: [Unified Memory]
+      summary: GDPR purge — delete all agent memory
+      description: >
+        Permanently deletes all data for an agent across every store:
+
+
+        - **DynamoDB**: all state and episodic items for the agent partition key
+
+        - **Aurora**: all `semantic_memory` rows for the agent
+
+        - **S3**: all archived episode objects under `{tenant_id}/{agent_id}/`
+
+
+        This operation is idempotent — calling it twice is safe. Returns the
+        count of deleted items per store.
+      parameters:
+        - $ref: "#/components/parameters/AgentIdPath"
+      responses:
+        "200":
+          description: Purge complete. Returns counts of deleted items per store.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurgeResponseEnvelope"
+              example:
+                data:
+                  agent_id: agent-42
+                  deleted:
+                    state: 3
+                    semantic: 12
+                    episodic: 87
+                    s3_objects: 14
+                meta:
+                  request_id: abc123xyz
+                  latency_ms: 3240
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # -------------------------------------------------------------------------
+  # Usage
+  # -------------------------------------------------------------------------
+  /v1/usage:
+    get:
+      operationId: getUsage
+      tags: [Usage]
+      summary: Get usage statistics
+      description: >
+        Returns per-tenant usage counters for the current billing period. API
+        call and embedding counts are read from DynamoDB usage tracking. Agent
+        and session counts are computed on-the-fly by scanning the state table.
+        Semantic memory count is read from Aurora. S3 object count is not
+        computed on-the-fly and always returns 0 (requires S3 inventory job).
+      responses:
+        "200":
+          description: Usage statistics for the current billing period.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageEnvelope"
+              example:
+                data:
+                  api_calls_month: 14283
+                  embeddings_generated_month: 3419
+                  storage:
+                    dynamodb_items: 892
+                    semantic_memories: 341
+                    s3_objects: 0
+                  agents_count: 7
+                  sessions_count: 44
+                  billing_period: "2026-03"
+                meta:
+                  request_id: abc123xyz
+                  latency_ms: 188
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+# ---------------------------------------------------------------------------
+# Components
+# ---------------------------------------------------------------------------
+components:
+
+  # -------------------------------------------------------------------------
+  # Security schemes
+  # -------------------------------------------------------------------------
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >
+        API key issued from the Mnemora dashboard. Pass it in the
+        `Authorization` header as `Bearer <api_key>`. The Lambda authorizer
+        SHA-256 hashes the key and looks it up in DynamoDB to resolve your
+        `tenant_id`.
+
+  # -------------------------------------------------------------------------
+  # Reusable parameters
+  # -------------------------------------------------------------------------
+  parameters:
+    AgentIdPath:
+      name: agent_id
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 256
+      description: >
+        Agent identifier. Must not contain `#` (reserved as DynamoDB key
+        delimiter).
+      example: agent-42
+
+    MemoryIdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: UUID of the semantic memory record.
+      example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+
+  # -------------------------------------------------------------------------
+  # Reusable responses
+  # -------------------------------------------------------------------------
+  responses:
+    ValidationError:
+      description: Request body failed validation.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+          examples:
+            validation_error:
+              value:
+                error:
+                  code: VALIDATION_ERROR
+                  message: "1 validation error for StateCreateRequest\nagent_id\n  field required"
+                meta:
+                  request_id: abc123xyz
+            invalid_json:
+              value:
+                error:
+                  code: INVALID_JSON
+                  message: "Invalid JSON in request body"
+                meta:
+                  request_id: abc123xyz
+
+    Unauthorized:
+      description: >
+        Missing or invalid API key. Ensure the `Authorization: Bearer <key>`
+        header is present and the key is active.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+          example:
+            error:
+              code: UNAUTHORIZED
+              message: "Unauthorized"
+            meta:
+              request_id: abc123xyz
+
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+          example:
+            error:
+              code: NOT_FOUND
+              message: "No state found for agent 'agent-42' session 'sess-xyz'"
+            meta:
+              request_id: abc123xyz
+
+    PayloadTooLarge:
+      description: >
+        Request body exceeds the 400 KB DynamoDB item size limit. Reduce the
+        size of the `data` field.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+          example:
+            error:
+              code: PAYLOAD_TOO_LARGE
+              message: "Request body exceeds 400KB limit"
+            meta:
+              request_id: abc123xyz
+
+    TooManyRequests:
+      description: Rate limit exceeded. Retry after the `Retry-After` interval.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+          example:
+            error:
+              code: RATE_LIMITED
+              message: "Too many requests. Retry after 1 second."
+            meta:
+              request_id: abc123xyz
+
+    InternalError:
+      description: Unexpected server-side error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+          example:
+            error:
+              code: INTERNAL_ERROR
+              message: "Internal server error"
+            meta:
+              request_id: abc123xyz
+
+  # -------------------------------------------------------------------------
+  # Schemas
+  # -------------------------------------------------------------------------
+  schemas:
+
+    # -----------------------------------------------------------------------
+    # Shared envelope components
+    # -----------------------------------------------------------------------
+    MetaResponse:
+      type: object
+      description: Response metadata present on every API response.
+      required: [request_id, latency_ms]
+      properties:
+        request_id:
+          type: string
+          description: Unique identifier for this request, useful for support queries.
+          example: abc123xyz
+        latency_ms:
+          type: integer
+          description: Server-side processing time in milliseconds.
+          example: 42
+
+    MetaErrorResponse:
+      type: object
+      description: Minimal metadata included on error responses (no latency_ms).
+      required: [request_id]
+      properties:
+        request_id:
+          type: string
+          description: Unique identifier for this request.
+          example: abc123xyz
+
+    ErrorDetail:
+      type: object
+      description: Machine-readable error detail.
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: >
+            Machine-readable error code. Known values: `VALIDATION_ERROR`,
+            `INVALID_JSON`, `NOT_FOUND`, `VERSION_CONFLICT`, `PAYLOAD_TOO_LARGE`,
+            `UNROUTABLE_PAYLOAD`, `UNAUTHORIZED`, `RATE_LIMITED`,
+            `INTERNAL_ERROR`.
+          example: VALIDATION_ERROR
+        message:
+          type: string
+          description: Human-readable description of the error.
+          example: "1 validation error for StateCreateRequest\nagent_id\n  field required"
+
+    ErrorEnvelope:
+      type: object
+      description: Standard error response wrapper.
+      required: [error, meta]
+      properties:
+        error:
+          $ref: "#/components/schemas/ErrorDetail"
+        meta:
+          $ref: "#/components/schemas/MetaErrorResponse"
+
+    # -----------------------------------------------------------------------
+    # Working memory schemas
+    # -----------------------------------------------------------------------
+    StateCreateRequest:
+      type: object
+      description: Request body for POST /v1/state.
+      required: [agent_id, data]
+      properties:
+        agent_id:
+          type: string
+          minLength: 1
+          maxLength: 256
+          description: >
+            Agent identifier. Must not contain `#` (reserved as DynamoDB key
+            delimiter).
+          example: agent-42
+        session_id:
+          type: string
+          minLength: 1
+          maxLength: 256
+          description: >
+            Session identifier. A UUID is auto-generated when omitted. Must not
+            contain `#`.
+          example: sess-abc
+        data:
+          type: object
+          description: >
+            Arbitrary JSON state data. Maximum serialised size is 400 KB
+            (DynamoDB item limit).
+          example:
+            messages: []
+            context: "user is asking about refunds"
+        ttl_hours:
+          type: [integer, "null"]
+          minimum: 1
+          maximum: 8760
+          description: >
+            Time-to-live in hours. When set, DynamoDB automatically deletes the
+            item after this many hours. Omit for no expiry.
+          example: 24
+
+    StateUpdateRequest:
+      type: object
+      description: Request body for PUT /v1/state/{agent_id}.
+      required: [data, version]
+      properties:
+        session_id:
+          type: string
+          minLength: 1
+          maxLength: 256
+          default: default
+          description: Session to update. Defaults to `default`.
+          example: sess-abc
+        data:
+          type: object
+          description: Replacement state data. Overwrites the existing value entirely.
+          example:
+            messages:
+              - role: user
+                content: "How do I cancel my subscription?"
+        version:
+          type: integer
+          minimum: 1
+          description: >
+            Current version for optimistic locking. Must match the value
+            returned from the last successful read or write. On success the
+            stored version is incremented by 1.
+          example: 3
+        ttl_hours:
+          type: [integer, "null"]
+          minimum: 1
+          maximum: 8760
+          description: Updated TTL in hours. Omit to leave TTL unchanged.
+          example: 48
+
+    StateResponse:
+      type: object
+      description: Working memory state item.
+      required: [agent_id, session_id, data, version, created_at, updated_at]
+      properties:
+        agent_id:
+          type: string
+          example: agent-42
+        session_id:
+          type: string
+          example: sess-abc
+        data:
+          type: object
+          description: The stored state data.
+          example:
+            messages: []
+        version:
+          type: integer
+          description: >
+            Monotonically increasing version number. Starts at 1 on creation,
+            increments by 1 on each successful update.
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-03-02T14:23:01+00:00"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-03-02T14:23:01+00:00"
+        expires_at:
+          type: [string, "null"]
+          format: date-time
+          description: ISO 8601 expiry timestamp when TTL is set; null otherwise.
+          example: "2026-03-03T14:23:01+00:00"
+
+    StateResponseEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/StateResponse"
+        meta:
+          $ref: "#/components/schemas/MetaResponse"
+
+    SessionListEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [agent_id, sessions, count]
+          properties:
+            agent_id:
+              type: string
+              example: agent-42
+            sessions:
+              type: array
+              items:
+                type: object
+                description: Session summary item returned by DynamoDB list query.
+            count:
+              type: integer
+              description: Total number of sessions.
+              example: 2
+        meta:
+          $ref: "#/components/schemas/MetaResponse"
+
+    StateDeleteEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [deleted, agent_id, session_id]
+          properties:
+            deleted:
+              type: boolean
+              example: true
+            agent_id:
+              type: string
+              example: agent-42
+            session_id:
+              type: string
+              example: sess-abc
+        meta:
+          $ref: "#/components/schemas/MetaResponse"
+
+    # -----------------------------------------------------------------------
+    # Semantic memory schemas
+    # -----------------------------------------------------------------------
+    SemanticCreateRequest:
+      type: object
+      description: Request body for POST /v1/memory/semantic.
+      required: [agent_id, content]
+      properties:
+        agent_id:
+          type: string
+          minLength: 1
+          maxLength: 256
+          description: Agent identifier.
+          example: agent-42
+        content:
+          type: string
+          minLength: 1
+          description: >
+            Text to embed and store. Content exceeding ~8,000 tokens is
+            automatically chunked; each chunk is stored as a separate row.
+          example: "The user prefers concise responses and dislikes bullet lists."
+        namespace:
+          type: string
+          minLength: 1
+          maxLength: 128
+          default: default
+          description: >
+            Logical namespace for grouping memories (e.g. `preferences`,
+            `facts`, `context`). Used to scope search results.
+          example: preferences
+        metadata:
+          type: object
+          default: {}
+          description: Arbitrary JSON metadata stored alongside the memory.
+          example:
+            source: system_prompt
+
+    SemanticSearchRequest:
+      type: object
+      description: Request body for POST /v1/memory/semantic/search.
+      required: [query]
+      properties:
+        query:
+          type: string
+          minLength: 1
+          description: Natural language query. Embedded and compared via cosine similarity.
+          example: "user communication preferences"
+        agent_id:
+          type: [string, "null"]
+          description: Restrict search to a specific agent. Omit to search across all agents.
+          example: agent-42
+        namespace:
+          type: [string, "null"]
+          description: Restrict search to a specific namespace.
+          example: preferences
+        top_k:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+          description: Maximum number of results to return.
+          example: 5
+        threshold:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          default: 0.7
+          description: >
+            Minimum cosine similarity score (0.0–1.0). Results with similarity
+            below this value are excluded.
+          example: 0.7
+        metadata_filter:
+          type: [object, "null"]
+          description: >
+            JSONB containment filter applied to the `metadata` column
+            (`metadata @> filter`). Only memories whose metadata contains all
+            specified key-value pairs are returned.
+          example:
+            source: system_prompt
+
+    SemanticResponse:
+      type: object
+      description: Semantic memory record.
+      required: [id, agent_id, content, namespace, metadata, created_at, updated_at, deduplicated]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: UUID of the semantic memory record.
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        agent_id:
+          type: string
+          example: agent-42
+        content:
+          type: string
+          description: The original text content.
+          example: "The user prefers concise responses and dislikes bullet lists."
+        namespace:
+          type: string
+          example: preferences
+        metadata:
+          type: object
+          description: Arbitrary metadata stored with this memory.
+          example:
+            source: system_prompt
+        similarity_score:
+          type: [number, "null"]
+          format: float
+          description: >
+            Cosine similarity score (0.0–1.0). Present only on search results;
+            null on direct reads.
+          example: 0.94
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-03-01T09:00:00.000000+00:00"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-03-02T14:23:01.123456+00:00"
+        deduplicated:
+          type: boolean
+          description: >
+            True when the request updated an existing record (cosine similarity
+            > 0.95) rather than inserting a new one.
+          example: false
+
+    SemanticResponseEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/SemanticResponse"
+        meta:
+          $ref: "#/components/schemas/MetaResponse"
+
+    SemanticSearchResultsEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [results, count]
+          properties:
+            results:
+              type: array
+              items:
+                $ref: "#/components/schemas/SemanticResponse"
+            count:
+              type: integer
+              description: Number of results returned.
+              example: 1
+        meta:
+          $ref: "#/components/schemas/MetaResponse"
+
+    # -----------------------------------------------------------------------
+    # Episodic memory schemas
+    # -----------------------------------------------------------------------
+    EpisodeCreateRequest:
+      type: object
+      description: Request body for POST /v1/memory/episodic.
+      required: [agent_id, session_id, type, content]
+      properties:
+        agent_id:
+          type: string
+          minLength: 1
+          maxLength: 256
+          description: Agent identifier. Must not contain `#`.
+          example: agent-42
+        session_id:
+          type: string
+          minLength: 1
+          maxLength: 256
+          description: Session identifier. Must not contain `#`.
+          example: sess-abc
+        type:
+          type: string
+          enum: [conversation, action, observation, tool_call]
+          description: Episode type.
+          example: conversation
+        content:
+          description: >
+            Episode content. Use a string for conversation/observation/action
+            episodes; use an object for structured tool_call payloads.
+          oneOf:
+            - type: string
+            - type: object
+          example: "User asked about cancellation policy"
+        metadata:
+          type: object
+          default: {}
+          description: Optional metadata attached to the episode.
+          example:
+            turn: 3
+
+    EpisodeResponse:
+      type: object
+      description: Stored episode record.
+      required: [id, agent_id, session_id, type, content, metadata, timestamp]
+      properties:
+        id:
+          type: string
+          description: Unique episode identifier.
+          example: "ep-7f3a1b2c"
+        agent_id:
+          type: string
+          example: agent-42
+        session_id:
+          type: string
+          example: sess-abc
+        type:
+          type: string
+          enum: [conversation, action, observation, tool_call]
+          example: conversation
+        content:
+          description: The stored episode content (string or object).
+          oneOf:
+            - type: string
+            - type: object
+          example: "User asked about cancellation policy"
+        metadata:
+          type: object
+          example:
+            turn: 3
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the episode was stored.
+          example: "2026-03-02T14:23:01.456789+00:00"
+
+    EpisodeResponseEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/EpisodeResponse"
+        meta:
+          $ref: "#/components/schemas/MetaResponse"
+
+    EpisodeListEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [episodes, count]
+          properties:
+            episodes:
+              type: array
+              items:
+                $ref: "#/components/schemas/EpisodeResponse"
+            count:
+              type: integer
+              example: 1
+        meta:
+          $ref: "#/components/schemas/MetaResponse"
+
+    SessionReplayEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [session_id, episodes, count]
+          properties:
+            session_id:
+              type: string
+              example: sess-abc
+            episodes:
+              type: array
+              items:
+                $ref: "#/components/schemas/EpisodeResponse"
+            count:
+              type: integer
+              example: 2
+        meta:
+          $ref: "#/components/schemas/MetaResponse"
+
+    EpisodeSummaryRequest:
+      type: object
+      description: Request body for POST /v1/memory/episodic/{agent_id}/summarize.
+      properties:
+        num_episodes:
+          type: integer
+          minimum: 1
+          maximum: 500
+          default: 50
+          description: Number of most recent episodes to include in the summary.
+          example: 50
+        target_length:
+          type: integer
+          minimum: 50
+          maximum: 5000
+          default: 500
+          description: Target summary length in words.
+          example: 500
+
+    EpisodeSummaryEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [summary, episode_count, semantic_memory_id, time_range]
+          properties:
+            summary:
+              type: string
+              description: Generated narrative summary of the selected episodes.
+              example: >
+                The user contacted support about cancelling their subscription.
+                The agent retrieved the cancellation policy and confirmed the
+                30-day refund window.
+            episode_count:
+              type: integer
+              description: Number of episodes included in the summary.
+              example: 7
+            semantic_memory_id:
+              type: string
+              format: uuid
+              description: UUID of the new semantic memory record that stores this summary.
+              example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+            time_range:
+              type: object
+              required: [from, to]
+              properties:
+                from:
+                  type: string
+                  format: date-time
+                  description: Timestamp of the oldest episode included.
+                  example: "2026-03-02T14:23:01+00:00"
+                to:
+                  type: string
+                  format: date-time
+                  description: Timestamp of the newest episode included.
+                  example: "2026-03-02T14:27:44+00:00"
+        meta:
+          $ref: "#/components/schemas/MetaResponse"
+
+    # -----------------------------------------------------------------------
+    # Unified memory schemas
+    # -----------------------------------------------------------------------
+    UnifiedMemoryCreateRequest:
+      type: object
+      description: >
+        Request body for POST /v1/memory. Include field combinations that match
+        exactly one routing rule; see the endpoint description for rules.
+      required: [agent_id]
+      properties:
+        agent_id:
+          type: string
+          minLength: 1
+          maxLength: 256
+          description: Agent identifier. Must not contain `#`.
+          example: agent-42
+        session_id:
+          type: [string, "null"]
+          minLength: 1
+          maxLength: 256
+          description: >
+            Session identifier. Required when routing to working memory (must
+            accompany `data`). Optional when routing to episodic; a UUID is
+            auto-generated if omitted. Must not contain `#`.
+          example: sess-abc
+        data:
+          type: [object, "null"]
+          description: >
+            State data for working memory. When present with `session_id`,
+            routes to the state store.
+          example:
+            step: 3
+        content:
+          description: >
+            Content for semantic or episodic memory. String only for semantic.
+            String or object for episodic.
+          oneOf:
+            - type: string
+            - type: object
+            - type: "null"
+          example: "User prefers email over phone support"
+        type:
+          enum: [conversation, action, observation, tool_call, null]
+          description: >
+            Episode type. When present with `content`, routes to the episodic
+            store.
+          example: conversation
+        namespace:
+          type: string
+          minLength: 1
+          maxLength: 128
+          default: default
+          description: Namespace for semantic memory routing.
+          example: preferences
+        metadata:
+          type: object
+          default: {}
+          description: Metadata forwarded to the target store.
+          example: {}
+        ttl_hours:
+          type: [integer, "null"]
+          minimum: 1
+          maximum: 8760
+          description: TTL in hours. Applied only when routing to working memory.
+          example: 24
+
+    UnifiedCreateResponseEnvelope:
+      type: object
+      description: >
+        Response from POST /v1/memory. The `data` payload shape matches the
+        target store's response schema, plus a `memory_type` field indicating
+        which store was used (`state`, `episodic`, or `semantic`).
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          description: >
+            Target store's response with an additional `memory_type` field.
+            Shape varies by routing target (StateResponse, EpisodeResponse, or
+            SemanticResponse fields).
+          properties:
+            memory_type:
+              type: string
+              enum: [state, episodic, semantic]
+              description: Which memory store the payload was routed to.
+              example: state
+          additionalProperties: true
+        meta:
+          $ref: "#/components/schemas/MetaResponse"
+
+    UnifiedSearchRequest:
+      type: object
+      description: Request body for POST /v1/memory/search.
+      required: [query]
+      properties:
+        query:
+          type: string
+          minLength: 1
+          description: Natural language search query.
+          example: "user cancellation preference"
+        agent_id:
+          type: [string, "null"]
+          description: Restrict results to a specific agent.
+          example: agent-42
+        top_k:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+          description: Maximum results per store (semantic and episodic each).
+          example: 10
+        threshold:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          default: 0.5
+          description: Minimum cosine similarity for semantic results.
+          example: 0.5
+
+    UnifiedSearchResultsEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [results, count]
+          properties:
+            results:
+              type: array
+              description: >
+                Merged results from semantic and episodic stores. Each item
+                includes a `memory_type` field. Semantic results appear first,
+                sorted by similarity score; episodic results follow, sorted by
+                timestamp descending.
+              items:
+                type: object
+                description: >
+                  Semantic result (SemanticResponse fields + memory_type) or
+                  episodic result (EpisodeResponse fields + memory_type +
+                  relevance).
+                additionalProperties: true
+            count:
+              type: integer
+              example: 2
+        meta:
+          $ref: "#/components/schemas/MetaResponse"
+
+    AgentMemoryEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [agent_id, state, semantic, episodic, summary]
+          properties:
+            agent_id:
+              type: string
+              example: agent-42
+            state:
+              description: >
+                Current working memory for the `default` session. Null if no
+                state exists.
+              oneOf:
+                - $ref: "#/components/schemas/StateResponse"
+                - type: "null"
+            semantic:
+              type: array
+              description: Up to 5 most recent semantic memories by `created_at`.
+              items:
+                $ref: "#/components/schemas/SemanticResponse"
+            episodic:
+              type: array
+              description: Last 10 episodes by timestamp.
+              items:
+                $ref: "#/components/schemas/EpisodeResponse"
+            summary:
+              type: object
+              required: [state_exists, semantic_count, episodic_count]
+              properties:
+                state_exists:
+                  type: boolean
+                  example: true
+                semantic_count:
+                  type: integer
+                  example: 1
+                episodic_count:
+                  type: integer
+                  example: 1
+            warnings:
+              type: array
+              description: >
+                Present only when one or more stores failed. Describes which
+                stores were unavailable. The response still succeeds with
+                partial data.
+              items:
+                type: string
+              example:
+                - "Failed to retrieve semantic memory (Aurora store unavailable)"
+        meta:
+          $ref: "#/components/schemas/MetaResponse"
+
+    PurgeResponseEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [agent_id, deleted]
+          properties:
+            agent_id:
+              type: string
+              example: agent-42
+            deleted:
+              type: object
+              required: [state, semantic, episodic, s3_objects]
+              properties:
+                state:
+                  type: integer
+                  description: Number of DynamoDB state items deleted.
+                  example: 3
+                semantic:
+                  type: integer
+                  description: Number of Aurora semantic_memory rows deleted.
+                  example: 12
+                episodic:
+                  type: integer
+                  description: Number of DynamoDB episodic items deleted.
+                  example: 87
+                s3_objects:
+                  type: integer
+                  description: Number of S3 archived episode objects deleted.
+                  example: 14
+        meta:
+          $ref: "#/components/schemas/MetaResponse"
+
+    # -----------------------------------------------------------------------
+    # Usage schema
+    # -----------------------------------------------------------------------
+    UsageEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required:
+            - api_calls_month
+            - embeddings_generated_month
+            - storage
+            - agents_count
+            - sessions_count
+            - billing_period
+          properties:
+            api_calls_month:
+              type: integer
+              description: Total API calls for the current billing period.
+              example: 14283
+            embeddings_generated_month:
+              type: integer
+              description: Total Bedrock embedding calls for the current billing period.
+              example: 3419
+            storage:
+              type: object
+              required: [dynamodb_items, semantic_memories, s3_objects]
+              properties:
+                dynamodb_items:
+                  type: integer
+                  description: Total DynamoDB items across state and episodic tables.
+                  example: 892
+                semantic_memories:
+                  type: integer
+                  description: Active (non-deleted) semantic memory records in Aurora.
+                  example: 341
+                s3_objects:
+                  type: integer
+                  description: >
+                    S3 archived episode objects. Always 0 — requires a background
+                    S3 inventory job to compute.
+                  example: 0
+            agents_count:
+              type: integer
+              description: Distinct agent IDs with at least one state session.
+              example: 7
+            sessions_count:
+              type: integer
+              description: Total active state sessions across all agents.
+              example: 44
+            billing_period:
+              type: string
+              description: Current billing period in `YYYY-MM` format.
+              example: "2026-03"
+        meta:
+          $ref: "#/components/schemas/MetaResponse"
+
+    # -----------------------------------------------------------------------
+    # Health schema
+    # -----------------------------------------------------------------------
+    HealthEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [status, version, timestamp]
+          properties:
+            status:
+              type: string
+              enum: [ok]
+              example: ok
+            version:
+              type: string
+              description: API version string.
+              example: 0.1.0
+            timestamp:
+              type: string
+              format: date-time
+              description: Current UTC timestamp at time of response.
+              example: "2026-03-02T14:23:01.456789+00:00"
+        meta:
+          $ref: "#/components/schemas/MetaResponse"

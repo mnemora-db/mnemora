@@ -1,0 +1,66 @@
+# ──────────────────────────────────────────────
+# Python
+# ──────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+*.whl
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Linting
+.ruff_cache/
+.mypy_cache/
+
+# ──────────────────────────────────────────────
+# Node.js / TypeScript
+# ──────────────────────────────────────────────
+node_modules/
+.next/
+out/
+
+# ──────────────────────────────────────────────
+# AWS CDK
+# ──────────────────────────────────────────────
+cdk.out/
+cdk-outputs.json
+cdk.context.json
+
+# ──────────────────────────────────────────────
+# Environment & Secrets
+# ──────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ──────────────────────────────────────────────
+# Internal docs with deployment secrets
+# ──────────────────────────────────────────────
+docs/deployment-outputs.md
+
+# ──────────────────────────────────────────────
+# IDE / Editor
+# ──────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
