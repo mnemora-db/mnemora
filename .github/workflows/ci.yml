@@ -1,0 +1,185 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint Python (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@d632683dd7b4114ad4ce5a8622924efc1d32dbc1 # v4.2.0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip packages
+        uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-ruff-${{ hashFiles('**/requirements.txt', '**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-ruff-
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Check code formatting (ruff format)
+        run: ruff format --check api/ sdk/
+
+      - name: Lint with ruff
+        run: ruff check api/ sdk/
+
+  typecheck:
+    name: Type check TypeScript
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@d632683dd7b4114ad4ce5a8622924efc1d32dbc1 # v4.2.0
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6 # v4.0.1
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install infra dependencies
+        run: cd infra && npm ci
+
+      - name: Type check infra (TypeScript)
+        run: cd infra && npx tsc --noEmit
+
+      - name: Install dashboard dependencies
+        run: cd dashboard && npm ci
+
+      - name: Type check dashboard (TypeScript)
+        run: cd dashboard && npx tsc --noEmit
+
+  test-api:
+    name: Test API (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@d632683dd7b4114ad4ce5a8622924efc1d32dbc1 # v4.2.0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip packages
+        uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-api-${{ hashFiles('api/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-api-
+
+      - name: Install API dependencies
+        run: cd api && pip install -r requirements.txt
+
+      - name: Install test dependencies
+        run: pip install pytest pytest-cov
+
+      - name: Run API tests with coverage
+        run: cd api && python -m pytest tests/ -v --cov=handlers --cov=lib --cov-report=xml --cov-report=term
+        env:
+          PYTHONPATH: ${{ github.workspace }}/api
+
+      - name: Upload API coverage to Codecov
+        uses: codecov/codecov-action@7492ba02b8585d3ecf4f0b4c566dca0f3cde019b # v4.1.0
+        with:
+          files: ./api/coverage.xml
+          flags: api
+          fail_ci_if_error: false
+
+  test-sdk:
+    name: Test SDK (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@d632683dd7b4114ad4ce5a8622924efc1d32dbc1 # v4.2.0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip packages
+        uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-sdk-${{ hashFiles('sdk/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-sdk-
+
+      - name: Install SDK with dev dependencies
+        run: cd sdk && pip install -e ".[dev]"
+
+      - name: Install coverage plugin
+        run: pip install pytest-cov
+
+      - name: Run SDK tests with coverage
+        run: cd sdk && python -m pytest tests/ -v --cov=mnemora --cov-report=xml --cov-report=term
+
+      - name: Upload SDK coverage to Codecov
+        uses: codecov/codecov-action@7492ba02b8585d3ecf4f0b4c566dca0f3cde019b # v4.1.0
+        with:
+          files: ./sdk/coverage.xml
+          flags: sdk
+          fail_ci_if_error: false
+
+  cdk-synth:
+    name: CDK Synthesis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@d632683dd7b4114ad4ce5a8622924efc1d32dbc1 # v4.2.0
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6 # v4.0.1
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install infra dependencies
+        run: cd infra && npm ci
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip packages (for Lambda layer synthesis)
+        uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-lambda-${{ hashFiles('api/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-lambda-
+
+      - name: Install API dependencies (for Lambda layer)
+        run: cd api && pip install -r requirements.txt
+
+      - name: Synthesize CDK cloud assembly
+        run: cd infra && npx cdk synth --quiet
+
+      - name: Verify cloud assembly was generated
+        run: |
+          if [ ! -d "infra/cdk.out" ]; then
+            echo "CDK synthesis failed: cdk.out directory not found"
+            exit 1
+          fi
