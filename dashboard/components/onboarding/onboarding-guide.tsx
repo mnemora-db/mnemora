@@ -6,11 +6,11 @@ import Link from "next/link";
 
 const STORAGE_KEY = "mnemora-onboarding-dismissed";
 
-const CODE_SNIPPET = `from mnemora import Mnemora
+const CODE_SNIPPET = `from mnemora import MnemoraSync
 
-m = Mnemora(api_key="mnm_...")
-m.state.put("agent-1", {"mood": "curious"})
-print(m.state.get("agent-1"))`;
+client = MnemoraSync(api_key="mnm_...")
+client.store_state("agent-1", {"mood": "curious"})
+print(client.get_state("agent-1").data)`;
 
 interface Step {
   title: string;
@@ -132,10 +132,10 @@ export function OnboardingGuide() {
       {step === 1 && (
         <div className="flex items-center gap-2">
           <code className="flex-1 font-mono text-xs text-[#2DD4BF] bg-[#111114] border border-[#27272A] rounded-md px-3 py-2">
-            pip install mnemora-sdk
+            pip install mnemora
           </code>
           <button
-            onClick={() => handleCopy("pip install mnemora-sdk", "pip")}
+            onClick={() => handleCopy("pip install mnemora", "pip")}
             className="w-8 h-8 flex items-center justify-center rounded-md border border-[#27272A] bg-[#111114] text-[#71717A] hover:text-[#FAFAFA] hover:border-[#3F3F46] transition-colors duration-150 shrink-0"
             aria-label={copiedPip ? "Copied" : "Copy command"}
           >

@@ -719,7 +719,7 @@ function CodeSection() {
           <p className="text-[#71717A] text-sm mt-3">
             Install{" "}
             <code className="font-mono text-[#2DD4BF] bg-[#2DD4BF]/8 px-1.5 py-0.5 rounded text-xs">
-              pip install mnemora-sdk
+              pip install mnemora
             </code>{" "}
             and you&apos;re ready.
           </p>

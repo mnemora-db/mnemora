@@ -5,7 +5,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/build-passing-brightgreen" alt="Build passing" />
   <img src="https://img.shields.io/badge/coverage-92%25-brightgreen" alt="Coverage 92%" />
-  <img src="https://img.shields.io/pypi/v/mnemora-sdk?label=PyPI&color=2DD4BF" alt="PyPI v0.1.0" />
+  <img src="https://img.shields.io/pypi/v/mnemora?label=PyPI&color=2DD4BF" alt="PyPI v0.1.0" />
   <img src="https://img.shields.io/badge/license-MIT%20%2F%20BSL--1.1-blue" alt="License MIT/BSL" />
   <img src="https://img.shields.io/badge/python-3.9%2B-blue" alt="Python 3.9+" />
 </p>
@@ -33,7 +33,7 @@ Serverless, multi-tenant by design, AWS-native. No LLM call required for CRUD op
 
 ```mermaid
 graph LR
-    SDK["Python SDK\n(mnemora-sdk)"]
+    SDK["Python SDK\n(mnemora)"]
     APIGW["HTTP API Gateway\n($1/M requests)"]
     LAMBDA["Lambda ARM64\nPython 3.12"]
     DYNAMO["DynamoDB\nState + Episodes (hot)"]
@@ -55,7 +55,7 @@ graph LR
 Install the SDK:
 
 ```bash
-pip install mnemora-sdk
+pip install mnemora
 ```
 
 Your first agent memory in under 15 lines:
@@ -165,7 +165,7 @@ result = await app.ainvoke(
 )
 ```
 
-Install the extra: `pip install "mnemora-sdk[langgraph]"`
+Install the extra: `pip install "mnemora[langgraph]"`
 
 ### LangChain
 
@@ -188,7 +188,7 @@ chain_with_history = RunnableWithMessageHistory(
 )
 ```
 
-Install the extra: `pip install "mnemora-sdk[langchain]"`
+Install the extra: `pip install "mnemora[langchain]"`
 
 ### CrewAI
 
@@ -208,7 +208,7 @@ plan = storage.load("research_plan")
 # Full interface: save, load, delete, list_keys, reset, search
 ```
 
-Install the extra: `pip install "mnemora-sdk[crewai]"`
+Install the extra: `pip install "mnemora[crewai]"`
 
 ---
 
@@ -269,7 +269,7 @@ All endpoints require `Authorization: Bearer <api_key>`. All responses follow `{
 Deploy the entire stack to your AWS account with CDK. Requires Node.js 18+ and AWS credentials configured.
 
 ```bash
-git clone https://github.com/mnemora-dev/mnemora.git
+git clone https://github.com/mnemora-db/mnemora.git
 cd mnemora/infra
 npm install
 npx cdk deploy

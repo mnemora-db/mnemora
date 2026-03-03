@@ -215,16 +215,14 @@ export default async function DashboardPage() {
                   minutes. Generate an API key above, then:
                 </p>
                 <pre className="mt-3 px-4 py-3 bg-[#111114] border border-[#27272A] rounded-md text-xs font-mono text-[#A1A1AA] overflow-x-auto">
-                  <code>{`pip install mnemora-sdk
+                  <code>{`pip install mnemora
 
-from mnemora import Mnemora
+from mnemora import MnemoraSync
 
-client = Mnemora(api_key="mnm_...")
-client.state.put(
-    agent_id="my-agent",
-    session_id="session-1",
-    data={"task": "hello world"}
-)`}</code>
+client = MnemoraSync(api_key="mnm_...")
+client.store_state("my-agent", {"task": "hello world"})
+client.store_memory("my-agent", "User prefers concise replies.")
+`}</code>
                 </pre>
               </div>
             </div>

@@ -62,15 +62,13 @@ export default async function AgentsPage() {
               </Link>
             </div>
             <pre className="mt-5 px-4 py-3 bg-[#111114] border border-[#27272A] rounded-md text-xs font-mono text-[#A1A1AA] text-left max-w-md overflow-x-auto w-full">
-              <code>{`pip install mnemora-sdk
+              <code>{`pip install mnemora
 
-from mnemora import Mnemora
-client = Mnemora(api_key="mnm_...")
-client.state.put(
-    agent_id="my-agent",
-    session_id="s1",
-    data={"task": "research"}
-)`}</code>
+from mnemora import MnemoraSync
+client = MnemoraSync(api_key="mnm_...")
+client.store_state("my-agent", {"task": "research"})
+client.store_memory("my-agent", "Key finding from research.")
+`}</code>
             </pre>
           </div>
         </section>
