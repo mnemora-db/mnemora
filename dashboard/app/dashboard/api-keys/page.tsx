@@ -1,4 +1,4 @@
-import { ApiKeyCard } from "@/components/api-key-card";
+import { ApiKeyManager } from "@/components/api-key-manager";
 import { ShieldCheck } from "lucide-react";
 
 export default function ApiKeysPage() {
@@ -36,10 +36,7 @@ export default function ApiKeysPage() {
           Active Keys
         </h2>
         <div className="max-w-xl">
-          <ApiKeyCard
-            maskedKey="mnm_****...****7f3a"
-            createdLabel="5 days ago"
-          />
+          <ApiKeyManager />
         </div>
       </section>
     </div>
