@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { Sidebar } from "@/components/sidebar";
+import { FeedbackWidget } from "@/components/feedback/feedback-widget";
 
 export default async function DashboardLayout({
   children,
@@ -20,6 +21,7 @@ export default async function DashboardLayout({
       <div className="flex-1 ml-60">
         <main className="px-8 py-8">{children}</main>
       </div>
+      <FeedbackWidget />
     </div>
   );
 }

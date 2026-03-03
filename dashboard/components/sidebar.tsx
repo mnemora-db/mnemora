@@ -10,7 +10,9 @@ import {
   ExternalLink,
   Settings,
   User,
+  MessageSquare,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -33,8 +35,12 @@ const navItems: NavItem[] = [
   },
 ];
 
+const ADMIN_GITHUB_USERNAME = "isaacgbc";
+
 export function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.name === ADMIN_GITHUB_USERNAME;
 
   function isActive(href: string): boolean {
     if (href === "/dashboard") {
@@ -110,6 +116,29 @@ export function Sidebar() {
             </Link>
           );
         })}
+
+        {/* Admin-only nav items */}
+        {isAdmin && (
+          <Link
+            href="/dashboard/feedback"
+            aria-current={isActive("/dashboard/feedback") ? "page" : undefined}
+            className={cn(
+              "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors duration-150",
+              isActive("/dashboard/feedback")
+                ? "bg-[rgba(45,212,191,0.08)] text-teal-400"
+                : "text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#18181B]"
+            )}
+          >
+            <MessageSquare
+              className={cn(
+                "w-4 h-4 shrink-0",
+                isActive("/dashboard/feedback") ? "text-teal-400" : "text-[#71717A]"
+              )}
+              aria-hidden="true"
+            />
+            <span>Feedback</span>
+          </Link>
+        )}
       </nav>
 
       {/* Bottom: user + settings */}

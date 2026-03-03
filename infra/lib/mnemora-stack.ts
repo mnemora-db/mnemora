@@ -34,6 +34,7 @@ export class MnemoraStack extends cdk.Stack {
   public readonly auroraSg: ec2.SecurityGroup;
   public readonly lambdaSg: ec2.SecurityGroup;
   public readonly usersTable: dynamodb.Table;
+  public readonly feedbackTable: dynamodb.Table;
   public readonly httpApi: HttpApi;
 
   constructor(scope: Construct, id: string, props: MnemoraStackProps) {
@@ -121,6 +122,27 @@ export class MnemoraStack extends cdk.Stack {
     this.usersTable.addGlobalSecondaryIndex({
       indexName: 'api-key-index',
       partitionKey: { name: 'api_key_hash', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    // -------------------------------------------------------
+    // DynamoDB — feedback table for bug reports & feature requests
+    // PK: feedback_id (UUID). Dashboard reads/writes directly.
+    // -------------------------------------------------------
+    this.feedbackTable = new dynamodb.Table(this, 'FeedbackTable', {
+      tableName: `mnemora-feedback-${stage}`,
+      partitionKey: { name: 'feedback_id', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
+      removalPolicy: isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+      deletionProtection: isProd,
+    });
+
+    // GSI for querying feedback by type + date
+    this.feedbackTable.addGlobalSecondaryIndex({
+      indexName: 'type-index',
+      partitionKey: { name: 'type', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'created_at', type: dynamodb.AttributeType.STRING },
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
@@ -961,6 +983,12 @@ export class MnemoraStack extends cdk.Stack {
       value: this.usersTable.tableName,
       description: 'DynamoDB users table name',
       exportName: `mnemora-users-table-${stage}`,
+    });
+
+    new cdk.CfnOutput(this, 'FeedbackTableName', {
+      value: this.feedbackTable.tableName,
+      description: 'DynamoDB feedback table name',
+      exportName: `mnemora-feedback-table-${stage}`,
     });
   }
 }
