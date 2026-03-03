@@ -51,3 +51,40 @@ body {
 html {
   color-scheme: dark;
 }
+
+/* ─── Landing page animations ─────────────────────────────────────────────── */
+
+@keyframes aurora1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -25px) scale(1.05); }
+  66% { transform: translate(-20px, 15px) scale(0.95); }
+}
+
+@keyframes aurora2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-25px, 20px) scale(0.95); }
+  66% { transform: translate(20px, -20px) scale(1.05); }
+}
+
+@keyframes aurora3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(15px, -15px) scale(1.03); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.pricing-shimmer {
+  background: linear-gradient(
+    90deg,
+    #2DD4BF20 0%,
+    #2DD4BF40 25%,
+    #A78BFA30 50%,
+    #2DD4BF40 75%,
+    #2DD4BF20 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 4s linear infinite;
+}

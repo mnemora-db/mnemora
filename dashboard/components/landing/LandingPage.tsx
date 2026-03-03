@@ -316,6 +316,43 @@ function Navbar() {
 function HeroSection() {
   return (
     <section className="relative overflow-hidden pt-24 pb-20 px-4 text-center">
+      {/* Aurora gradient blobs */}
+      <div
+        className="absolute pointer-events-none"
+        style={{
+          top: "-10%",
+          left: "15%",
+          width: "600px",
+          height: "600px",
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(45,212,191,0.07) 0%, transparent 70%)",
+          animation: "aurora1 12s ease-in-out infinite",
+        }}
+      />
+      <div
+        className="absolute pointer-events-none"
+        style={{
+          top: "5%",
+          right: "10%",
+          width: "500px",
+          height: "500px",
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(167,139,250,0.05) 0%, transparent 70%)",
+          animation: "aurora2 15s ease-in-out infinite",
+        }}
+      />
+      <div
+        className="absolute pointer-events-none"
+        style={{
+          top: "20%",
+          left: "40%",
+          width: "400px",
+          height: "400px",
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(56,189,248,0.04) 0%, transparent 70%)",
+          animation: "aurora3 18s ease-in-out infinite",
+        }}
+      />
       {/* Teal glow */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -324,13 +361,13 @@ function HeroSection() {
             "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(45,212,191,0.10) 0%, transparent 70%)",
         }}
       />
-      {/* Subtle grid */}
+      {/* Dot grid pattern */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(250,250,250,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(250,250,250,0.02) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
+            "radial-gradient(circle, rgba(250,250,250,0.04) 1px, transparent 1px)",
+          backgroundSize: "24px 24px",
         }}
       />
 
@@ -467,15 +504,17 @@ function ProblemSection() {
           {problems.map(({ icon: Icon, title, body }) => (
             <div
               key={title}
-              className="rounded-xl border border-[#27272A] bg-[#111114] p-6 hover:border-[#3F3F46] transition-colors duration-200"
+              className="group relative rounded-xl p-px bg-gradient-to-b from-[#2DD4BF]/10 via-[#27272A] to-[#A78BFA]/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(45,212,191,0.08)]"
             >
-              <div className="w-9 h-9 rounded-lg bg-[#18181B] border border-[#27272A] flex items-center justify-center mb-4">
-                <Icon className="w-4 h-4 text-[#71717A]" />
+              <div className="rounded-[11px] bg-[#111114]/80 backdrop-blur-sm p-6 h-full">
+                <div className="w-9 h-9 rounded-lg bg-[#18181B] border border-[#27272A] flex items-center justify-center mb-4">
+                  <Icon className="w-4 h-4 text-[#71717A]" />
+                </div>
+                <h3 className="text-sm font-semibold text-[#FAFAFA] mb-2">
+                  {title}
+                </h3>
+                <p className="text-xs text-[#71717A] leading-relaxed">{body}</p>
               </div>
-              <h3 className="text-sm font-semibold text-[#FAFAFA] mb-2">
-                {title}
-              </h3>
-              <p className="text-xs text-[#71717A] leading-relaxed">{body}</p>
             </div>
           ))}
         </div>
@@ -541,31 +580,33 @@ function SolutionSection() {
           {types.map(({ icon: Icon, name, badge, badgeColor, desc, soon }) => (
             <div
               key={name}
-              className={`rounded-xl border p-6 transition-colors duration-200 ${
+              className={`group relative rounded-xl p-px transition-all duration-300 ${
                 soon
-                  ? "border-[#27272A]/50 bg-[#111114] opacity-60"
-                  : "border-[#27272A] bg-[#111114] hover:border-[#3F3F46]"
+                  ? "bg-[#27272A]/50 opacity-60"
+                  : "bg-gradient-to-b from-[#2DD4BF]/10 via-[#27272A] to-[#A78BFA]/10 hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(45,212,191,0.08)]"
               }`}
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-9 h-9 rounded-lg bg-[#18181B] border border-[#27272A] flex items-center justify-center">
-                  <Icon className="w-4 h-4" style={{ color: badgeColor }} />
+              <div className={`rounded-[11px] p-6 h-full ${soon ? "bg-[#111114]" : "bg-[#111114]/80 backdrop-blur-sm"}`}>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-9 h-9 rounded-lg bg-[#18181B] border border-[#27272A] flex items-center justify-center">
+                    <Icon className="w-4 h-4" style={{ color: badgeColor }} />
+                  </div>
+                  <span
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
+                    style={{
+                      color: badgeColor,
+                      borderColor: `${badgeColor}40`,
+                      backgroundColor: `${badgeColor}12`,
+                    }}
+                  >
+                    {badge}
+                  </span>
                 </div>
-                <span
-                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
-                  style={{
-                    color: badgeColor,
-                    borderColor: `${badgeColor}40`,
-                    backgroundColor: `${badgeColor}12`,
-                  }}
-                >
-                  {badge}
-                </span>
+                <h3 className="text-sm font-semibold text-[#FAFAFA] mb-2">
+                  {name}
+                </h3>
+                <p className="text-xs text-[#71717A] leading-relaxed">{desc}</p>
               </div>
-              <h3 className="text-sm font-semibold text-[#FAFAFA] mb-2">
-                {name}
-              </h3>
-              <p className="text-xs text-[#71717A] leading-relaxed">{desc}</p>
             </div>
           ))}
         </div>
@@ -617,8 +658,16 @@ const TOKEN_COLOR: Record<TokenType, string> = {
 
 function CodeSection() {
   return (
-    <section className="py-20 px-4">
-      <div className="max-w-4xl mx-auto">
+    <section className="relative py-20 px-4 overflow-hidden">
+      {/* Subtle gradient background */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(167,139,250,0.04) 0%, transparent 50%), radial-gradient(ellipse 60% 40% at 50% 60%, rgba(45,212,191,0.03) 0%, transparent 50%)",
+        }}
+      />
+      <div className="relative max-w-4xl mx-auto">
         <div className="text-center mb-12">
           <span className="text-xs font-semibold text-[#52525B] uppercase tracking-widest">
             Quickstart
@@ -636,7 +685,10 @@ function CodeSection() {
         </div>
 
         {/* Code window */}
-        <div className="rounded-xl border border-[#27272A] bg-[#0D0D10] overflow-hidden shadow-2xl shadow-black/60">
+        <div
+          className="rounded-xl border border-[#27272A] bg-[#0D0D10] overflow-hidden"
+          style={{ boxShadow: "0 0 60px rgba(45,212,191,0.06), 0 0 120px rgba(167,139,250,0.03), 0 25px 50px -12px rgba(0,0,0,0.6)" }}
+        >
           {/* Window chrome */}
           <div className="flex items-center gap-2 px-4 py-3 border-b border-[#27272A] bg-[#18181B]">
             <div className="flex gap-1.5">
@@ -725,8 +777,9 @@ function ComparisonSection() {
                 <th className="text-left px-5 py-3.5 text-[#52525B] font-medium text-xs w-[30%] bg-[#0D0D10]">
                   Feature
                 </th>
-                <th className="px-4 py-3.5 text-center text-xs font-semibold text-[#2DD4BF] bg-[#2DD4BF]/[0.06]">
+                <th className="px-4 py-3.5 text-center text-xs font-semibold text-[#2DD4BF] bg-[#2DD4BF]/[0.06] relative">
                   Mnemora
+                  <div className="absolute bottom-0 left-2 right-2 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(45,212,191,0.6), transparent)", boxShadow: "0 1px 8px rgba(45,212,191,0.3)" }} />
                 </th>
                 <th className="px-4 py-3.5 text-center text-xs font-medium text-[#71717A] bg-[#0D0D10]">
                   Mem0
@@ -743,7 +796,7 @@ function ComparisonSection() {
               {COMPARISON_FEATURES.map((row, i) => (
                 <tr
                   key={row.feature}
-                  className={`border-b border-[#27272A]/40 ${
+                  className={`border-b border-[#27272A]/40 transition-colors duration-200 hover:bg-[#18181B]/50 ${
                     i % 2 === 0 ? "bg-[#09090B]" : "bg-[#0D0D10]"
                   }`}
                 >
@@ -821,22 +874,24 @@ function WhySection() {
           {reasons.map(({ icon: Icon, color, title, body }) => (
             <div
               key={title}
-              className="rounded-xl border border-[#27272A] bg-[#111114] p-6 flex gap-4 hover:border-[#3F3F46] transition-colors duration-200"
+              className="group relative rounded-xl p-px bg-gradient-to-b from-[#2DD4BF]/10 via-[#27272A] to-[#A78BFA]/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(45,212,191,0.08)]"
             >
-              <div
-                className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center border mt-0.5"
-                style={{
-                  background: `${color}15`,
-                  borderColor: `${color}30`,
-                }}
-              >
-                <Icon className="w-4 h-4" style={{ color }} />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-[#FAFAFA] mb-1.5">
-                  {title}
-                </h3>
-                <p className="text-xs text-[#71717A] leading-relaxed">{body}</p>
+              <div className="rounded-[11px] bg-[#111114]/80 backdrop-blur-sm p-6 h-full flex gap-4">
+                <div
+                  className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center border mt-0.5"
+                  style={{
+                    background: `${color}15`,
+                    borderColor: `${color}30`,
+                  }}
+                >
+                  <Icon className="w-4 h-4" style={{ color }} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-[#FAFAFA] mb-1.5">
+                    {title}
+                  </h3>
+                  <p className="text-xs text-[#71717A] leading-relaxed">{body}</p>
+                </div>
               </div>
             </div>
           ))}
@@ -972,63 +1027,71 @@ function PricingSection() {
           {PRICING_TIERS.map((tier) => (
             <div
               key={tier.name}
-              className={`rounded-xl border p-6 flex flex-col relative ${
+              className={`group relative rounded-xl p-px transition-all duration-300 hover:-translate-y-0.5 ${
                 tier.highlight
-                  ? "border-[#2DD4BF]/40 bg-gradient-to-b from-[#2DD4BF]/[0.07] to-[#111114] shadow-xl shadow-[#2DD4BF]/8"
-                  : "border-[#27272A] bg-[#111114]"
+                  ? "pricing-shimmer hover:shadow-[0_0_40px_rgba(45,212,191,0.12)]"
+                  : "bg-gradient-to-b from-[#2DD4BF]/10 via-[#27272A] to-[#A78BFA]/10 hover:shadow-[0_0_30px_rgba(45,212,191,0.08)]"
               }`}
             >
-              {tier.highlight && (
-                <div className="absolute -top-px left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-b-md bg-[#2DD4BF] text-[#09090B] text-[10px] font-bold whitespace-nowrap">
-                  Most popular
-                </div>
-              )}
-
-              <div className="mb-5 mt-2">
-                <h3 className="text-sm font-semibold text-[#FAFAFA] mb-1">
-                  {tier.name}
-                </h3>
-                <p className="text-xs text-[#71717A] mb-3">{tier.description}</p>
-                <div className="flex items-baseline gap-1">
-                  {tier.price === 0 ? (
-                    <span className="text-2xl font-bold text-[#FAFAFA]">
-                      Free
-                    </span>
-                  ) : (
-                    <>
-                      <span className="text-2xl font-bold text-[#FAFAFA]">
-                        ${tier.price}
-                      </span>
-                      <span className="text-xs text-[#52525B]">/month</span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <ul className="space-y-2.5 mb-6 flex-1">
-                {tier.features.map((f) => (
-                  <li
-                    key={f}
-                    className="flex items-start gap-2 text-xs text-[#A1A1AA]"
-                  >
-                    <Check className="w-3.5 h-3.5 text-[#2DD4BF] shrink-0 mt-0.5" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-
-              <a
-                href={tier.href}
-                target={tier.price === 0 ? undefined : "_blank"}
-                rel={tier.price === 0 ? undefined : "noopener noreferrer"}
-                className={`w-full text-center py-2 rounded-lg text-xs font-semibold transition-all duration-150 ${
+              <div
+                className={`rounded-[11px] p-6 flex flex-col relative h-full ${
                   tier.highlight
-                    ? "bg-[#2DD4BF] text-[#09090B] hover:bg-[#2DD4BF]/90"
-                    : "border border-[#27272A] text-[#A1A1AA] hover:border-[#3F3F46] hover:text-[#FAFAFA]"
+                    ? "bg-gradient-to-b from-[#2DD4BF]/[0.07] to-[#111114]/95 backdrop-blur-sm"
+                    : "bg-[#111114]/80 backdrop-blur-sm"
                 }`}
               >
-                {tier.cta}
-              </a>
+                {tier.highlight && (
+                  <div className="absolute -top-px left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-b-md bg-[#2DD4BF] text-[#09090B] text-[10px] font-bold whitespace-nowrap">
+                    Most popular
+                  </div>
+                )}
+
+                <div className="mb-5 mt-2">
+                  <h3 className="text-sm font-semibold text-[#FAFAFA] mb-1">
+                    {tier.name}
+                  </h3>
+                  <p className="text-xs text-[#71717A] mb-3">{tier.description}</p>
+                  <div className="flex items-baseline gap-1">
+                    {tier.price === 0 ? (
+                      <span className="text-2xl font-bold text-[#FAFAFA]">
+                        Free
+                      </span>
+                    ) : (
+                      <>
+                        <span className="text-2xl font-bold text-[#FAFAFA]">
+                          ${tier.price}
+                        </span>
+                        <span className="text-xs text-[#52525B]">/month</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <ul className="space-y-2.5 mb-6 flex-1">
+                  {tier.features.map((f) => (
+                    <li
+                      key={f}
+                      className="flex items-start gap-2 text-xs text-[#A1A1AA]"
+                    >
+                      <Check className="w-3.5 h-3.5 text-[#2DD4BF] shrink-0 mt-0.5" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+
+                <a
+                  href={tier.href}
+                  target={tier.price === 0 ? undefined : "_blank"}
+                  rel={tier.price === 0 ? undefined : "noopener noreferrer"}
+                  className={`w-full text-center py-2 rounded-lg text-xs font-semibold transition-all duration-150 ${
+                    tier.highlight
+                      ? "bg-[#2DD4BF] text-[#09090B] hover:bg-[#2DD4BF]/90"
+                      : "border border-[#27272A] text-[#A1A1AA] hover:border-[#3F3F46] hover:text-[#FAFAFA]"
+                  }`}
+                >
+                  {tier.cta}
+                </a>
+              </div>
             </div>
           ))}
         </div>
@@ -1163,6 +1226,27 @@ function Footer() {
   );
 }
 
+// ─── Section divider ──────────────────────────────────────────────────────────
+function SectionDivider() {
+  return (
+    <div className="relative h-px">
+      <div
+        className="absolute inset-0"
+        style={{
+          background: "linear-gradient(90deg, transparent, rgba(45,212,191,0.2), transparent)",
+        }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{
+          background: "linear-gradient(90deg, transparent, rgba(45,212,191,0.15), transparent)",
+          filter: "blur(4px)",
+        }}
+      />
+    </div>
+  );
+}
+
 // ─── Main export ───────────────────────────────────────────────────────────────
 export default function LandingPage() {
   return (
@@ -1172,13 +1256,21 @@ export default function LandingPage() {
         <HeroSection />
         <TrustStrip />
         <ProblemSection />
+        <SectionDivider />
         <SolutionSection />
+        <SectionDivider />
         <CodeSection />
+        <SectionDivider />
         <ComparisonSection />
+        <SectionDivider />
         <WhySection />
+        <SectionDivider />
         <FAQSection />
+        <SectionDivider />
         <BlogSection />
+        <SectionDivider />
         <PricingSection />
+        <SectionDivider />
         <CTASection />
       </main>
       <Footer />
