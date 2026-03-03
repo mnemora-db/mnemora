@@ -2,10 +2,18 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { getUsageStats } from "@/lib/mnemora-api";
 import { StatCard } from "@/components/stat-card";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, ArrowRight } from "lucide-react";
 import {
   mockCostEstimates,
 } from "@/lib/mock-data";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
+import { TIER_LIMITS, TIER_BADGE_COLORS } from "@/lib/tiers";
+import Link from "next/link";
+
+const USERS_TABLE = process.env.USERS_TABLE_NAME ?? "mnemora-users-dev";
+const usageDdb = new DynamoDBClient({ region: process.env.AWS_REGION ?? "us-east-1" });
+const usageDocClient = DynamoDBDocumentClient.from(usageDdb);
 
 function totalCost(costs: { cost: number }[]): number {
   return costs.reduce((sum, c) => sum + c.cost, 0);
@@ -16,6 +24,23 @@ export default async function UsagePage() {
   const githubId = session?.user?.id ?? "";
   const stats = await getUsageStats(githubId);
   const total = totalCost(mockCostEstimates);
+
+  // Fetch user tier from DynamoDB
+  let userTier = "free";
+  try {
+    const userResult = await usageDocClient.send(
+      new GetCommand({
+        TableName: USERS_TABLE,
+        Key: { github_id: githubId },
+        ProjectionExpression: "tier",
+      })
+    );
+    userTier = String(userResult.Item?.tier ?? "free");
+  } catch {
+    // Fallback to free
+  }
+  const tierInfo = TIER_LIMITS[userTier] ?? TIER_LIMITS.free;
+  const badgeColor = TIER_BADGE_COLORS[userTier] ?? TIER_BADGE_COLORS.free;
 
   return (
     <div className="space-y-6">
@@ -71,14 +96,27 @@ export default async function UsagePage() {
               <p className="text-xs font-medium text-[#71717A] uppercase tracking-wide">
                 Current Tier
               </p>
-              <p className="mt-1 text-lg font-semibold text-[#FAFAFA]">Free</p>
+              <p className="mt-1 text-lg font-semibold text-[#FAFAFA]">
+                {tierInfo.label}
+              </p>
               <p className="mt-0.5 text-xs text-[#71717A]">
-                100K API calls/month · 1 GB storage · 10 agents
+                {tierInfo.apiCallsPerDay} API calls/day · {tierInfo.storage} storage · {tierInfo.agents} agent{tierInfo.agents === "1" ? "" : "s"}
               </p>
             </div>
-            <span className="px-2.5 py-1 rounded-md bg-[#2DD4BF]/10 text-[#2DD4BF] text-xs font-semibold uppercase tracking-wide border border-[#2DD4BF]/20">
-              Free
-            </span>
+            <div className="flex items-center gap-3">
+              <span
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wide border ${badgeColor}`}
+              >
+                {tierInfo.label}
+              </span>
+              <Link
+                href="/dashboard/billing"
+                className="flex items-center gap-1 text-xs text-[#71717A] hover:text-[#2DD4BF] transition-colors"
+              >
+                Manage plan
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
           </div>
         </div>
       </section>

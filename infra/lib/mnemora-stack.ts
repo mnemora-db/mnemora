@@ -125,6 +125,13 @@ export class MnemoraStack extends cdk.Stack {
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
+    // GSI for webhook: look up user by email in O(1)
+    this.usersTable.addGlobalSecondaryIndex({
+      indexName: 'email-index',
+      partitionKey: { name: 'email', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
     // -------------------------------------------------------
     // DynamoDB — feedback table for bug reports & feature requests
     // PK: feedback_id (UUID). Dashboard reads/writes directly.

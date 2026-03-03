@@ -8,11 +8,13 @@ import {
   BarChart2,
   KeyRound,
   BookOpen,
+  CreditCard,
   Settings,
   User,
   MessageSquare,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -26,6 +28,7 @@ const navItems: NavItem[] = [
   { label: "Agents", href: "/dashboard/agents", icon: Bot },
   { label: "Usage", href: "/dashboard/usage", icon: BarChart2 },
   { label: "API Keys", href: "/dashboard/api-keys", icon: KeyRound },
+  { label: "Billing", href: "/dashboard/billing", icon: CreditCard },
   {
     label: "Docs",
     href: "/docs",
@@ -39,6 +42,16 @@ export function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const isAdmin = session?.user?.name === ADMIN_GITHUB_USERNAME;
+  const [tier, setTier] = useState("free");
+
+  useEffect(() => {
+    fetch("/api/keys")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.tier) setTier(data.tier);
+      })
+      .catch(() => {});
+  }, []);
 
   function isActive(href: string): boolean {
     if (href === "/dashboard") {
@@ -149,9 +162,11 @@ export function Sidebar() {
           </div>
           <div className="min-w-0">
             <p className="text-xs font-medium text-[#FAFAFA] truncate">
-              isaac@mnemora.dev
+              {session?.user?.email ?? ""}
             </p>
-            <p className="text-xs text-[#71717A] truncate">Free tier</p>
+            <p className="text-xs text-[#71717A] truncate capitalize">
+              {tier} tier
+            </p>
           </div>
         </div>
       </div>

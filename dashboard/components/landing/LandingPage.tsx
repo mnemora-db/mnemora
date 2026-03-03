@@ -160,61 +160,56 @@ const PRICING_TIERS = [
     description: "For exploration and side projects",
     href: "/dashboard",
     features: [
-      "10,000 ops / month",
+      "500 API calls / day",
       "1 agent",
-      "500 MB storage",
+      "50 MB storage",
+      "5K vectors",
       "Community support",
-      "Working + semantic memory",
     ],
     cta: "Get started",
     highlight: false,
   },
   {
     name: "Starter",
-    price: 19,
+    price: 29,
     description: "For early-stage products",
-    href: "https://app.crea.la/mnemora/starter",
+    href: "https://app.crea.la/isaacgbc/product/starter-mnemora",
     features: [
-      "100,000 ops / month",
+      "5,000 API calls / day",
       "10 agents",
-      "5 GB storage",
+      "500 MB storage",
+      "50K vectors",
       "Email support",
-      "All memory types",
-      "API analytics",
     ],
     cta: "Subscribe",
     highlight: false,
   },
   {
     name: "Pro",
-    price: 79,
+    price: 49,
     description: "For production applications",
-    href: "https://app.crea.la/mnemora/pro",
+    href: "https://app.crea.la/isaacgbc/product/pro-mnemora",
     features: [
-      "1M ops / month",
-      "Unlimited agents",
-      "50 GB storage",
+      "25,000 API calls / day",
+      "50 agents",
+      "5 GB storage",
+      "250K vectors",
       "Priority support",
-      "All memory types",
-      "Advanced analytics",
-      "LangGraph checkpoints",
     ],
     cta: "Subscribe",
     highlight: true,
   },
   {
     name: "Scale",
-    price: 299,
+    price: 99,
     description: "For high-volume teams",
-    href: "https://app.crea.la/mnemora/scale",
+    href: "https://app.crea.la/isaacgbc/product/scale-mnemora",
     features: [
-      "10M ops / month",
+      "50,000 API calls / day",
       "Unlimited agents",
-      "500 GB storage",
-      "Dedicated support + SLA",
-      "All memory types",
-      "Custom integrations",
-      "Invoice billing",
+      "10 GB storage",
+      "500K vectors",
+      "Dedicated support",
     ],
     cta: "Subscribe",
     highlight: false,
@@ -1091,9 +1086,31 @@ function PricingSection() {
           ))}
         </div>
 
+        {/* Enterprise row */}
+        <div className="mt-4 rounded-xl p-px bg-gradient-to-r from-amber-500/20 via-[#27272A] to-amber-500/20">
+          <div className="rounded-[11px] bg-[#111114]/90 backdrop-blur-sm px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-semibold text-[#FAFAFA] mb-1">
+                Enterprise
+              </h3>
+              <p className="text-xs text-[#71717A] max-w-lg">
+                Unlimited everything, custom SLA, SSO/SAML, VPC peering, and
+                dedicated infrastructure for organizations with custom needs.
+              </p>
+            </div>
+            <a
+              href="mailto:isaacgbc@gmail.com"
+              className="shrink-0 text-center px-5 py-2 rounded-lg border border-[#27272A] text-xs font-semibold text-[#A1A1AA] hover:border-[#3F3F46] hover:text-[#FAFAFA] transition-all duration-150"
+            >
+              Contact us
+            </a>
+          </div>
+        </div>
+
         <p className="text-center text-xs text-[#3F3F46] mt-6">
-          All plans include TLS encryption, AWS-native infrastructure, and the
-          full Python SDK. No credit card required for the free tier.
+          All plans include TLS encryption, AWS-native infrastructure, all four
+          memory types, and the full Python SDK. No credit card required for
+          Free.
         </p>
       </div>
     </section>

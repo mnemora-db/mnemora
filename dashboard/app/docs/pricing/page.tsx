@@ -4,17 +4,19 @@ const content = `# Pricing
 
 ## Plans
 
-| | Free | Starter | Pro | Scale |
-|---|---|---|---|---|
-| **Price** | $0/mo | $19/mo | $79/mo | $299/mo |
-| **API calls/day** | 1,000 | 10,000 | 100,000 | 1,000,000 |
-| **Storage** | 100 MB | 1 GB | 10 GB | 100 GB |
-| **Vectors** | 10,000 | 100,000 | 1,000,000 | 10,000,000 |
-| **Memory types** | All 4 | All 4 | All 4 | All 4 |
-| **LangGraph checkpoints** | Yes | Yes | Yes | Yes |
-| **LangChain integration** | Yes | Yes | Yes | Yes |
-| **CrewAI integration** | Yes | Yes | Yes | Yes |
-| **Support** | Community | Email | Email + SLA | Dedicated |
+| | Free | Starter | Pro | Scale | Enterprise |
+|---|---|---|---|---|---|
+| **Price** | $0/mo | $29/mo | $49/mo | $99/mo | Contact us |
+| **API calls/day** | 500 | 5,000 | 25,000 | 50,000 | Unlimited |
+| **Storage** | 50 MB | 500 MB | 5 GB | 10 GB | Unlimited |
+| **Vectors** | 5K | 50K | 250K | 500K | Unlimited |
+| **Agents** | 1 | 10 | 50 | Unlimited | Unlimited |
+| **Memory types** | All 4 | All 4 | All 4 | All 4 | All 4 |
+| **LangGraph checkpoints** | Yes | Yes | Yes | Yes | Yes |
+| **LangChain integration** | Yes | Yes | Yes | Yes | Yes |
+| **CrewAI integration** | Yes | Yes | Yes | Yes | Yes |
+| **Support** | Community | Email | Priority | Dedicated | Custom SLA |
+| **SSO / SAML** | — | — | — | — | Yes |
 
 All plans include access to the four memory types (working, semantic, episodic, procedural), all SDK integrations, and the dashboard.
 
@@ -68,7 +70,7 @@ No. The Free plan is available indefinitely for personal projects and developmen
 
 **Is there an enterprise plan?**
 
-Yes. For requirements beyond the Scale plan — custom limits, VPC peering, dedicated infrastructure, or custom data residency — contact enterprise@mnemora.dev.
+Yes. Enterprise plans include unlimited everything, custom SLA, SSO/SAML, VPC peering, dedicated infrastructure, and custom data residency. Contact isaacgbc@gmail.com.
 
 **Can I switch plans mid-month?**
 
