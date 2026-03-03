@@ -44,6 +44,18 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
+    redirect({ url, baseUrl }) {
+      // After sign-in always land on /dashboard unless the caller
+      // explicitly requested a different relative path.
+      if (url.startsWith("/")) {
+        return url === "/" ? `${baseUrl}/dashboard` : `${baseUrl}${url}`;
+      }
+      // Allow absolute URLs on the same origin.
+      if (url.startsWith(baseUrl)) {
+        return url;
+      }
+      return `${baseUrl}/dashboard`;
+    },
   },
   pages: {
     signIn: "/",

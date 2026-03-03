@@ -34,7 +34,7 @@ export function HeroCtaButton() {
   return (
     <button
       type="button"
-      onClick={() => signIn("github")}
+      onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
       className="flex items-center gap-2 px-6 py-3 rounded-lg bg-[#2DD4BF] text-[#09090B] text-sm font-semibold hover:bg-[#2DD4BF]/90 transition-all duration-150 shadow-lg shadow-[#2DD4BF]/20"
     >
       Get started free

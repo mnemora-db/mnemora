@@ -22,7 +22,7 @@ interface LoginButtonProps {
 
 export function LoginButton({ className }: LoginButtonProps) {
   function handleSignIn() {
-    signIn("github");
+    signIn("github", { callbackUrl: "/dashboard" });
   }
 
   return (
