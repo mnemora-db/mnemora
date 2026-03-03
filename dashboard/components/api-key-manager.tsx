@@ -1,7 +1,17 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Copy, Check, Plus, Trash2, Key, AlertTriangle } from "lucide-react";
+import {
+  Copy,
+  Check,
+  Plus,
+  Trash2,
+  Key,
+  AlertTriangle,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import { toast } from "sonner";
 
 interface KeyData {
   has_key: boolean;
@@ -17,6 +27,8 @@ export function ApiKeyManager() {
   const [revoking, setRevoking] = useState(false);
   const [plaintextKey, setPlaintextKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copiedMasked, setCopiedMasked] = useState(false);
+  const [keyVisible, setKeyVisible] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchKey = useCallback(async () => {
@@ -44,14 +56,17 @@ export function ApiKeyManager() {
       if (!res.ok) throw new Error("Failed to create key");
       const data = await res.json();
       setPlaintextKey(data.key);
+      setKeyVisible(true);
       setKeyData({
         has_key: true,
         prefix: data.prefix,
         tier: data.tier,
         created_at: data.created_at,
       });
+      toast.success("API key created");
     } catch {
       setError("Failed to create API key");
+      toast.error("Failed to create API key");
     } finally {
       setCreating(false);
     }
@@ -65,14 +80,16 @@ export function ApiKeyManager() {
       if (!res.ok) throw new Error("Failed to revoke key");
       setKeyData({ has_key: false });
       setPlaintextKey(null);
+      toast.success("API key revoked");
     } catch {
       setError("Failed to revoke API key");
+      toast.error("Failed to revoke API key");
     } finally {
       setRevoking(false);
     }
   }
 
-  async function handleCopy() {
+  async function handleCopyPlaintext() {
     if (!plaintextKey) return;
     try {
       await navigator.clipboard.writeText(plaintextKey);
@@ -81,6 +98,28 @@ export function ApiKeyManager() {
     } catch {
       // Clipboard API unavailable
     }
+  }
+
+  async function handleCopyMasked() {
+    if (!keyData?.prefix) return;
+    try {
+      const masked = `${keyData.prefix}...****`;
+      await navigator.clipboard.writeText(masked);
+      setCopiedMasked(true);
+      toast("Full key only available at creation time", {
+        description: "Copied masked key to clipboard.",
+      });
+      setTimeout(() => setCopiedMasked(false), 2000);
+    } catch {
+      // Clipboard API unavailable
+    }
+  }
+
+  function getMaskedKey(): string {
+    if (keyData?.prefix) {
+      return `${keyData.prefix}${"*".repeat(8)}`;
+    }
+    return "mnm_****...****";
   }
 
   function formatDate(iso: string): string {
@@ -131,17 +170,29 @@ export function ApiKeyManager() {
               aria-hidden="true"
             />
             <p className="text-xs text-amber-400">
-              Copy this key now. It won&apos;t be shown again.
+              Save your API key now. It won&apos;t be shown again after you
+              leave this page.
             </p>
           </div>
 
-          {/* Key display */}
+          {/* Key display with visibility toggle */}
           <div className="mt-3 flex items-center gap-2">
             <code className="flex-1 font-mono text-sm text-[#2DD4BF] bg-[#111114] border border-[#27272A] rounded-sm px-3 py-2 truncate select-all">
-              {plaintextKey}
+              {keyVisible ? plaintextKey : getMaskedKey()}
             </code>
             <button
-              onClick={handleCopy}
+              onClick={() => setKeyVisible(!keyVisible)}
+              aria-label={keyVisible ? "Hide API key" : "Show API key"}
+              className="w-8 h-8 flex items-center justify-center rounded-sm border border-[#27272A] bg-[#111114] text-[#71717A] hover:text-[#FAFAFA] hover:border-[#3F3F46] transition-colors duration-150 shrink-0"
+            >
+              {keyVisible ? (
+                <EyeOff className="w-3.5 h-3.5" aria-hidden="true" />
+              ) : (
+                <Eye className="w-3.5 h-3.5" aria-hidden="true" />
+              )}
+            </button>
+            <button
+              onClick={handleCopyPlaintext}
               aria-label={copied ? "Copied" : "Copy API key"}
               className="w-8 h-8 flex items-center justify-center rounded-sm border border-[#27272A] bg-[#111114] text-[#71717A] hover:text-[#FAFAFA] hover:border-[#3F3F46] transition-colors duration-150 shrink-0"
             >
@@ -215,6 +266,21 @@ export function ApiKeyManager() {
             />
             {keyData.prefix}...****
           </code>
+          <button
+            onClick={handleCopyMasked}
+            aria-label={copiedMasked ? "Copied" : "Copy masked key"}
+            title="Full key only available at creation time"
+            className="w-8 h-8 flex items-center justify-center rounded-sm border border-[#27272A] bg-[#111114] text-[#71717A] hover:text-[#FAFAFA] hover:border-[#3F3F46] transition-colors duration-150 shrink-0"
+          >
+            {copiedMasked ? (
+              <Check
+                className="w-3.5 h-3.5 text-green-500"
+                aria-hidden="true"
+              />
+            ) : (
+              <Copy className="w-3.5 h-3.5" aria-hidden="true" />
+            )}
+          </button>
         </div>
       </div>
 

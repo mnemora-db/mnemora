@@ -12,6 +12,8 @@ import {
   Settings,
   User,
   MessageSquare,
+  Menu,
+  X,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
@@ -43,6 +45,7 @@ export function Sidebar() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.name === ADMIN_GITHUB_USERNAME;
   const [tier, setTier] = useState("free");
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/keys")
@@ -53,6 +56,23 @@ export function Sidebar() {
       .catch(() => {});
   }, []);
 
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
   function isActive(href: string): boolean {
     if (href === "/dashboard") {
       return pathname === "/dashboard";
@@ -60,11 +80,8 @@ export function Sidebar() {
     return pathname.startsWith(href);
   }
 
-  return (
-    <aside
-      className="fixed left-0 top-0 h-screen w-60 flex flex-col border-r border-[#27272A] bg-[#111114]"
-      aria-label="Primary navigation"
-    >
+  const sidebarContent = (
+    <>
       {/* Logo */}
       <div className="flex items-center gap-2 px-5 py-5 border-b border-[#27272A]">
         <div
@@ -90,6 +107,15 @@ export function Sidebar() {
         <span className="font-sans font-semibold text-[15px] text-[#FAFAFA] tracking-tight">
           mnemora
         </span>
+
+        {/* Mobile close button */}
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="ml-auto md:hidden w-8 h-8 flex items-center justify-center rounded-md text-[#71717A] hover:text-[#FAFAFA] hover:bg-[#18181B] transition-colors duration-150"
+          aria-label="Close menu"
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Nav */}
@@ -170,6 +196,47 @@ export function Sidebar() {
           </div>
         </div>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile hamburger button */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="fixed top-3 left-3 z-50 md:hidden w-10 h-10 flex items-center justify-center rounded-md bg-[#111114] border border-[#27272A] text-[#A1A1AA] hover:text-[#FAFAFA] hover:border-[#3F3F46] transition-colors duration-150"
+        aria-label="Open menu"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Mobile sidebar */}
+      <aside
+        className={cn(
+          "fixed left-0 top-0 h-screen w-60 flex flex-col border-r border-[#27272A] bg-[#111114] z-50 md:hidden transition-transform duration-200 ease-in-out",
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+        aria-label="Primary navigation"
+      >
+        {sidebarContent}
+      </aside>
+
+      {/* Desktop sidebar */}
+      <aside
+        className="hidden md:flex fixed left-0 top-0 h-screen w-60 flex-col border-r border-[#27272A] bg-[#111114]"
+        aria-label="Primary navigation"
+      >
+        {sidebarContent}
+      </aside>
+    </>
   );
 }

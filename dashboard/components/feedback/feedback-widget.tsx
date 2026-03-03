@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type FeedbackType = "bug" | "feature" | "feedback";
 type Severity = "critical" | "major" | "minor";
@@ -120,9 +121,11 @@ export function FeedbackWidget() {
       }
 
       setStatus("success");
+      toast.success("Feedback submitted — thank you!");
       setTimeout(() => handleOpenChange(false), 1800);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Something went wrong");
+      toast.error("Failed to submit feedback");
       setStatus("error");
     }
   }
@@ -141,7 +144,7 @@ export function FeedbackWidget() {
       </button>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Send Feedback</DialogTitle>
             <DialogDescription>

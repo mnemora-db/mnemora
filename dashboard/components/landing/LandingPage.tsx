@@ -19,6 +19,7 @@ import {
   Activity,
   BookOpen,
   ExternalLink,
+  Menu,
 } from "lucide-react";
 import { HeroCtaButton } from "@/components/auth/hero-cta-button";
 
@@ -262,6 +263,16 @@ function CellIcon({ value }: { value: CellValue }) {
 
 // ─── Navbar ────────────────────────────────────────────────────────────────────
 function Navbar() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const navLinks = [
+    { href: "#features", label: "Features" },
+    { href: "#compare", label: "Compare" },
+    { href: "#pricing", label: "Pricing" },
+    { href: "#blog", label: "Blog" },
+    { href: "#faq", label: "FAQ" },
+  ];
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#27272A]/80 bg-[#09090B]/90 backdrop-blur-md">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
@@ -276,13 +287,17 @@ function Navbar() {
           <span>mnemora</span>
         </Link>
 
-        {/* Nav links */}
+        {/* Nav links — desktop */}
         <nav className="hidden md:flex items-center gap-6 text-sm text-[#71717A]">
-          <a href="#features" className="hover:text-[#FAFAFA] transition-colors duration-150">Features</a>
-          <a href="#compare" className="hover:text-[#FAFAFA] transition-colors duration-150">Compare</a>
-          <a href="#pricing" className="hover:text-[#FAFAFA] transition-colors duration-150">Pricing</a>
-          <a href="#blog" className="hover:text-[#FAFAFA] transition-colors duration-150">Blog</a>
-          <a href="#faq" className="hover:text-[#FAFAFA] transition-colors duration-150">FAQ</a>
+          {navLinks.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              className="hover:text-[#FAFAFA] transition-colors duration-150"
+            >
+              {link.label}
+            </a>
+          ))}
         </nav>
 
         {/* Actions */}
@@ -302,8 +317,44 @@ function Navbar() {
           >
             Get started
           </Link>
+          {/* Hamburger — mobile */}
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="md:hidden w-8 h-8 flex items-center justify-center rounded-md text-[#71717A] hover:text-[#FAFAFA] hover:bg-[#18181B] transition-all duration-150"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+          >
+            {menuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile dropdown menu */}
+      {menuOpen && (
+        <nav className="md:hidden border-t border-[#27272A]/50 bg-[#09090B]/95 backdrop-blur-md">
+          <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-1">
+            {navLinks.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                onClick={() => setMenuOpen(false)}
+                className="px-3 py-2.5 rounded-md text-sm text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#18181B] transition-colors duration-150"
+              >
+                {link.label}
+              </a>
+            ))}
+            <a
+              href="https://github.com/mnemora-db/mnemora"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center gap-2 px-3 py-2.5 rounded-md text-sm text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#18181B] transition-colors duration-150 sm:hidden"
+            >
+              <Github className="w-4 h-4" />
+              GitHub
+            </a>
+          </div>
+        </nav>
+      )}
     </header>
   );
 }
