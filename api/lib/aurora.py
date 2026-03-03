@@ -48,7 +48,7 @@ _pool: Any | None = None  # psycopg_pool.ConnectionPool (lazy import)
 # ---------------------------------------------------------------------------
 # Environment configuration with sensible defaults from the deployed stack.
 # ---------------------------------------------------------------------------
-_AURORA_ENDPOINT = os.environ.get("AURORA_ENDPOINT", "")
+_AURORA_ENDPOINT = os.environ.get("AURORA_HOST", os.environ.get("AURORA_ENDPOINT", ""))
 _AURORA_PORT = os.environ.get("AURORA_PORT", "5432")
 _AURORA_SECRET_ARN = os.environ.get("AURORA_SECRET_ARN", "")
 _AURORA_DB_NAME = os.environ.get("AURORA_DB_NAME", "mnemora")
@@ -102,7 +102,7 @@ def _build_conninfo() -> str:
         f"user={username} "
         f"password={password} "
         f"sslmode=require "
-        f"connect_timeout=5"
+        f"connect_timeout=30"
     )
 
 
@@ -130,7 +130,7 @@ def _get_pool() -> Any:
         conninfo=conninfo,
         min_size=1,
         max_size=5,
-        timeout=5.0,
+        timeout=30.0,
         kwargs={"row_factory": dict_row, "autocommit": False},
     )
     logger.info("Aurora connection pool initialised (min=1, max=5, timeout=5s)")

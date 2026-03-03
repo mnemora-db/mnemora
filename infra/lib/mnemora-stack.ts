@@ -21,6 +21,8 @@ import {
   HttpLambdaAuthorizer,
   HttpLambdaResponseType,
 } from 'aws-cdk-lib/aws-apigatewayv2-authorizers';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as targets from 'aws-cdk-lib/aws-events-targets';
 
 export interface MnemoraStackProps extends cdk.StackProps {
   readonly stage: string;
@@ -330,6 +332,7 @@ export class MnemoraStack extends cdk.Stack {
       functionName: `mnemora-semantic-${stage}`,
       handler: 'handlers.semantic.handler',
       description: 'Semantic memory + vector search (Aurora pgvector)',
+      timeout: cdk.Duration.seconds(90),
     });
 
     const episodicFn = new lambda.Function(this, 'EpisodicFunction', {
@@ -337,6 +340,7 @@ export class MnemoraStack extends cdk.Stack {
       functionName: `mnemora-episodic-${stage}`,
       handler: 'handlers.episodic.handler',
       description: 'Episodic memory + time-range queries',
+      timeout: cdk.Duration.seconds(90),
     });
 
     const unifiedFn = new lambda.Function(this, 'UnifiedFunction', {
@@ -344,6 +348,7 @@ export class MnemoraStack extends cdk.Stack {
       functionName: `mnemora-unified-${stage}`,
       handler: 'handlers.unified.handler',
       description: 'Unified /v1/memory endpoint',
+      timeout: cdk.Duration.seconds(90),
     });
 
     // -------------------------------------------------------
@@ -359,6 +364,26 @@ export class MnemoraStack extends cdk.Stack {
       memorySize: 256,
     });
     this.auroraCluster.secret?.grantRead(migrateFn);
+
+    // -------------------------------------------------------
+    // Aurora warmer — keeps cluster responsive, runs every 5 min
+    // -------------------------------------------------------
+    const warmerFn = new lambda.Function(this, 'WarmerFunction', {
+      ...vpcLambdaProps,
+      functionName: `mnemora-aurora-warmer-${stage}`,
+      handler: 'handlers.warmer.handler',
+      description: 'Keeps Aurora Serverless v2 warm with SELECT 1 every 5 min',
+      timeout: cdk.Duration.seconds(90),
+      memorySize: 256,
+    });
+    this.auroraCluster.secret?.grantRead(warmerFn);
+
+    const warmerRule = new events.Rule(this, 'WarmerSchedule', {
+      ruleName: `mnemora-aurora-warmer-${stage}`,
+      description: 'Ping Aurora every 5 minutes to prevent cold starts',
+      schedule: events.Schedule.rate(cdk.Duration.minutes(5)),
+    });
+    warmerRule.addTarget(new targets.LambdaFunction(warmerFn));
 
     // -------------------------------------------------------
     // IAM grants — least privilege per function
