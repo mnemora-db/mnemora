@@ -7,7 +7,7 @@ import {
   Bot,
   BarChart2,
   KeyRound,
-  ExternalLink,
+  BookOpen,
   Settings,
   User,
   MessageSquare,
@@ -19,7 +19,6 @@ interface NavItem {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  external?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -29,9 +28,8 @@ const navItems: NavItem[] = [
   { label: "API Keys", href: "/dashboard/api-keys", icon: KeyRound },
   {
     label: "Docs",
-    href: "https://docs.mnemora.dev",
-    icon: ExternalLink,
-    external: true,
+    href: "/docs",
+    icon: BookOpen,
   },
 ];
 
@@ -84,13 +82,11 @@ export function Sidebar() {
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5" aria-label="Main menu">
         {navItems.map((item) => {
-          const active = !item.external && isActive(item.href);
+          const active = isActive(item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
-              target={item.external ? "_blank" : undefined}
-              rel={item.external ? "noopener noreferrer" : undefined}
               aria-current={active ? "page" : undefined}
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors duration-150",
@@ -107,12 +103,6 @@ export function Sidebar() {
                 aria-hidden="true"
               />
               <span>{item.label}</span>
-              {item.external && (
-                <ExternalLink
-                  className="w-3 h-3 ml-auto text-[#52525B]"
-                  aria-hidden="true"
-                />
-              )}
             </Link>
           );
         })}

@@ -88,3 +88,218 @@ html {
   background-size: 200% 100%;
   animation: shimmer 4s linear infinite;
 }
+
+/* ─── Docs prose styling ─────────────────────────────────────────────────── */
+
+.prose-mnemora {
+  color: #A1A1AA;
+  line-height: 1.75;
+  font-size: 0.9375rem;
+}
+
+.prose-mnemora h1 {
+  color: #FAFAFA;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.prose-mnemora h2 {
+  color: #FAFAFA;
+  font-size: 1.375rem;
+  font-weight: 600;
+  margin-top: 2.5rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.prose-mnemora h3 {
+  color: #FAFAFA;
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.prose-mnemora h4 {
+  color: #FAFAFA;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.prose-mnemora p {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.prose-mnemora a {
+  color: #2DD4BF;
+  text-decoration: none;
+}
+
+.prose-mnemora a:hover {
+  text-decoration: underline;
+}
+
+.prose-mnemora strong {
+  color: #FAFAFA;
+  font-weight: 600;
+}
+
+.prose-mnemora code:not(pre code) {
+  color: #FAFAFA;
+  background: #27272A;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.85em;
+  font-family: var(--font-geist-mono), monospace;
+}
+
+.prose-mnemora pre {
+  background: #111114;
+  border: 1px solid #27272A;
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.prose-mnemora pre code {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+  font-family: var(--font-geist-mono), monospace;
+  color: #E4E4E7;
+}
+
+.prose-mnemora ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.prose-mnemora ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.prose-mnemora li {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.prose-mnemora blockquote {
+  border-left: 3px solid #3F3F46;
+  padding-left: 1rem;
+  color: #71717A;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.prose-mnemora hr {
+  border-color: #27272A;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+.prose-mnemora table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.8125rem;
+}
+
+.prose-mnemora thead th {
+  color: #FAFAFA;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #3F3F46;
+  white-space: nowrap;
+}
+
+.prose-mnemora tbody td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #27272A;
+  vertical-align: top;
+}
+
+.prose-mnemora tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ─── highlight.js dark theme (matches Mnemora) ──────────────────────────── */
+
+.hljs {
+  color: #E4E4E7;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: #71717A;
+  font-style: italic;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-addition {
+  color: #C084FC;
+}
+
+.hljs-string,
+.hljs-attr,
+.hljs-template-variable,
+.hljs-addition {
+  color: #2DD4BF;
+}
+
+.hljs-number,
+.hljs-literal,
+.hljs-variable,
+.hljs-template-tag,
+.hljs-tag .hljs-attr {
+  color: #F59E0B;
+}
+
+.hljs-title,
+.hljs-section,
+.hljs-name {
+  color: #60A5FA;
+}
+
+.hljs-type,
+.hljs-built_in,
+.hljs-builtin-name {
+  color: #34D399;
+}
+
+.hljs-selector-id,
+.hljs-selector-class {
+  color: #F472B6;
+}
+
+.hljs-meta {
+  color: #71717A;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}

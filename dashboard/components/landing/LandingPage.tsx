@@ -736,7 +736,7 @@ function CodeSection() {
           </a>
           <span className="text-[#27272A]">·</span>
           <a
-            href="#"
+            href="/docs"
             className="flex items-center gap-1.5 hover:text-[#A1A1AA] transition-colors"
           >
             <BookOpen className="w-3.5 h-3.5" />
@@ -1183,8 +1183,8 @@ function Footer() {
                 Developers
               </p>
               <div className="space-y-2.5">
-                <a href="#" className="block text-[#52525B] hover:text-[#A1A1AA] transition-colors">Docs</a>
-                <a href="#" className="block text-[#52525B] hover:text-[#A1A1AA] transition-colors">API Reference</a>
+                <a href="/docs" className="block text-[#52525B] hover:text-[#A1A1AA] transition-colors">Docs</a>
+                <a href="/docs/api-reference" className="block text-[#52525B] hover:text-[#A1A1AA] transition-colors">API Reference</a>
                 <a
                   href="https://github.com/mnemora-db/mnemora"
                   target="_blank"
