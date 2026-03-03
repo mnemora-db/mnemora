@@ -20,6 +20,7 @@ import {
   BookOpen,
   ExternalLink,
 } from "lucide-react";
+import { HeroCtaButton } from "@/components/auth/hero-cta-button";
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 // bg: #09090B | surface: #111114 | card: #18181B | border: #27272A
@@ -400,13 +401,7 @@ function HeroSection() {
 
         {/* CTAs */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-14">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 px-6 py-3 rounded-lg bg-[#2DD4BF] text-[#09090B] text-sm font-semibold hover:bg-[#2DD4BF]/90 transition-all duration-150 shadow-lg shadow-[#2DD4BF]/20"
-          >
-            Get started free
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+          <HeroCtaButton />
           <a
             href="https://github.com/mnemora-db/mnemora"
             target="_blank"

@@ -1,8 +1,12 @@
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 import { StatCard } from "@/components/stat-card";
 import { ApiKeyCard } from "@/components/api-key-card";
 import { HealthIndicator } from "@/components/health-indicator";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
+import Link from "next/link";
 import {
   mockUsageStats,
   mockApiCalls,
@@ -35,19 +39,70 @@ function methodColor(method: ApiCall["method"]): string {
   return colors[method];
 }
 
-export default function DashboardPage() {
+const QUICK_LINKS: Array<{ label: string; description: string; href: string }> =
+  [
+    {
+      label: "Memory Browser",
+      description: "Inspect and search stored memories",
+      href: "/dashboard/memory",
+    },
+    {
+      label: "Agents",
+      description: "Manage your registered agents",
+      href: "/dashboard/agents",
+    },
+    {
+      label: "API Keys",
+      description: "Create and rotate API keys",
+      href: "/dashboard/keys",
+    },
+    {
+      label: "Usage & Billing",
+      description: "Track operations and storage costs",
+      href: "/dashboard/usage",
+    },
+  ];
+
+export default async function DashboardPage() {
+  const session = await getServerSession(authOptions);
   const stats = mockUsageStats;
+
+  const userName = session?.user?.name ?? "there";
+  const avatarUrl = session?.user?.image ?? null;
 
   return (
     <div className="space-y-6">
-      {/* Page header */}
-      <div>
-        <h1 className="text-[22px] font-semibold text-[#FAFAFA] tracking-tight">
-          Dashboard
-        </h1>
-        <p className="mt-0.5 text-sm text-[#71717A]">
-          Overview of your Mnemora workspace.
-        </p>
+      {/* Welcome header */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          {avatarUrl && (
+            <Image
+              src={avatarUrl}
+              alt={userName}
+              width={40}
+              height={40}
+              className="rounded-full border border-[#27272A] flex-shrink-0"
+            />
+          )}
+          <div>
+            <h1 className="text-[22px] font-semibold text-[#FAFAFA] tracking-tight">
+              Welcome back, {userName}
+            </h1>
+            <p className="mt-0.5 text-sm text-[#71717A]">
+              Overview of your Mnemora workspace.
+            </p>
+          </div>
+        </div>
+
+        {/* Create API Key button */}
+        <button
+          type="button"
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-[#2DD4BF] text-[#09090B] text-sm font-semibold hover:bg-[#2DD4BF]/90 transition-colors duration-150 flex-shrink-0"
+          aria-label="Create a new API key"
+        >
+          <Plus className="w-3.5 h-3.5" aria-hidden="true" />
+          Create API Key
+        </button>
       </div>
 
       {/* Quick stats */}
@@ -110,9 +165,7 @@ export default function DashboardPage() {
               </li>
             ))}
           </ul>
-          <p className="mt-4 text-xs text-[#52525B]">
-            Last checked 30s ago
-          </p>
+          <p className="mt-4 text-xs text-[#52525B]">Last checked 30s ago</p>
         </article>
 
         {/* API Key card */}
@@ -120,6 +173,27 @@ export default function DashboardPage() {
           maskedKey="mnm_****...****7f3a"
           createdLabel="5 days ago"
         />
+      </section>
+
+      {/* Quick links */}
+      <section aria-label="Quick links">
+        <h2 className="text-sm font-medium text-[#71717A] uppercase tracking-wide mb-3">
+          Quick Links
+        </h2>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {QUICK_LINKS.map(({ label, description, href }) => (
+            <Link
+              key={label}
+              href={href}
+              className="group rounded-md border border-[#27272A] bg-[#18181B] px-4 py-3.5 hover:border-[#3F3F46] hover:bg-[#1C1C1F] transition-all duration-150"
+            >
+              <p className="text-sm font-medium text-[#FAFAFA] group-hover:text-[#2DD4BF] transition-colors duration-150">
+                {label}
+              </p>
+              <p className="mt-0.5 text-xs text-[#71717A]">{description}</p>
+            </Link>
+          ))}
+        </div>
       </section>
 
       {/* Recent activity */}
@@ -164,7 +238,9 @@ export default function DashboardPage() {
                       {formatTimestamp(call.timestamp)}
                     </td>
                     <td className="px-5 py-3 font-mono whitespace-nowrap">
-                      <span className={cn("font-semibold", methodColor(call.method))}>
+                      <span
+                        className={cn("font-semibold", methodColor(call.method))}
+                      >
                         {call.method}
                       </span>
                     </td>

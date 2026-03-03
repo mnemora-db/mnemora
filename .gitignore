@@ -64,3 +64,4 @@ docs/deployment-outputs.md
 *~
 .DS_Store
 Thumbs.db
+.vercel
