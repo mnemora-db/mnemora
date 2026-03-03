@@ -8,6 +8,80 @@ Mnemora is an AWS-native, serverless database for AI agent memory. One API for f
 
 AI agents need persistent memory across sessions. Today developers stitch together 3-5 separate databases (Redis for state, Pinecone for vectors, Postgres for relational, S3 for logs). Mnemora unifies this into a single managed service with native integrations for LangChain, LangGraph, CrewAI, and AutoGen.
 
+## Deployed Architecture (LIVE - DO NOT RECREATE)
+
+- **AWS Account:** 993952121255, **Region:** us-east-1
+- **API URL:** https://0l1lfs30sk.execute-api.us-east-1.amazonaws.com
+- **Dashboard:** https://mnemora.dev (Vercel, project name: mnemora-dashboard)
+- **GitHub:** https://github.com/mnemora-db/mnemora
+
+### Infrastructure (ALL LIVE - DO NOT MODIFY unless adding new resources)
+
+- VPC with public/private/isolated subnets + NAT Gateway
+- Aurora Serverless v2 PostgreSQL 15.8 with pgvector (0.5-4 ACU)
+- DynamoDB tables: `mnemora-state-dev`, `mnemora-users-dev` (with `email-index` GSI and `api-key-index` GSI), `mnemora-feedback-dev`
+- S3: `mnemora-episodes-dev-993952121255`
+- 6 Lambda functions (Python 3.12, ARM64): health, auth, state, semantic, episodic, unified
+- HTTP API Gateway with Lambda authorizer
+- CloudWatch dashboard + alarms
+
+### API Endpoints (19 total, all working)
+
+- GET /v1/health
+- POST/GET/PUT/DELETE /v1/state/*
+- POST/POST/GET/DELETE /v1/memory/semantic/*
+- POST/GET/GET/POST /v1/memory/episodic/*
+- POST/GET/POST/DELETE /v1/memory/* (unified)
+- GET /v1/usage
+
+### Dashboard (Next.js 14, Vercel)
+
+- Landing page with pricing, comparison, FAQ, blog sections
+- GitHub OAuth authentication (NextAuth)
+- API key self-service (generates `mnm_` keys, SHA-256 hashed in DynamoDB)
+- Real data dashboard (usage, agents, health check)
+- Feedback system (widget -> GitHub Issues + DynamoDB, with toast notifications)
+- Billing page with Creala webhook integration (auto tier activation)
+- Admin upgrade endpoint (`/api/admin/upgrade`)
+- Docs site at `/docs/*` (8 pages)
+- Onboarding guide for new users
+
+### SDK (Python, in sdk/)
+
+- MnemoraClient (async) + MnemoraSync (sync)
+- 16 methods across state, semantic, episodic, unified
+- Integrations: LangGraph, LangChain, CrewAI
+- 116 tests passing
+
+### Pricing Tiers
+
+| Tier | Price | Calls/day | Storage | Vectors | Agents |
+|------|-------|-----------|---------|---------|--------|
+| Free | $0 | 500 | 50MB | 5K | 1 |
+| Starter | $29/mo | 5K | 500MB | 50K | 10 |
+| Pro | $49/mo | 25K | 5GB | 250K | 50 |
+| Scale | $99/mo | 50K | 10GB | 500K | unlimited |
+| Enterprise | Contact us | - | - | - | - |
+
+### Test Coverage
+
+- API: 335 tests
+- SDK: 116 tests
+- Total: 451+
+
+### Vercel Environment Variables
+
+`GITHUB_ID`, `GITHUB_SECRET`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `USERS_TABLE_NAME`, `FEEDBACK_TABLE_NAME`, `MNEMORA_API_URL`, `GITHUB_TOKEN`, `CREALA_WEBHOOK_SECRET`
+
+## Critical Deployment Rules
+
+1. **NEVER recreate existing infrastructure** (Lambda, API Gateway, VPC, Aurora, DynamoDB tables)
+2. To add new DynamoDB tables: add to `infra/lib/mnemora-stack.ts` and run `cdk deploy`
+3. Dashboard deploys via: `git push && vercel --prod --yes`
+4. API deploys via: `cd infra && npx cdk deploy`
+5. Always run `npm run build` before pushing dashboard changes
+6. Always run `ruff check` before pushing API changes
+
 ## Project structure
 
 ```
