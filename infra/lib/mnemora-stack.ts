@@ -33,6 +33,7 @@ export class MnemoraStack extends cdk.Stack {
   public readonly vpc: ec2.Vpc;
   public readonly auroraSg: ec2.SecurityGroup;
   public readonly lambdaSg: ec2.SecurityGroup;
+  public readonly usersTable: dynamodb.Table;
   public readonly httpApi: HttpApi;
 
   constructor(scope: Construct, id: string, props: MnemoraStackProps) {
@@ -99,6 +100,27 @@ export class MnemoraStack extends cdk.Stack {
       indexName: 'session-index',
       partitionKey: { name: 'gsi1pk', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'gsi1sk', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    // -------------------------------------------------------
+    // DynamoDB — users table for API key management
+    // PK: github_id (from OAuth). Stores hashed API keys.
+    // Dashboard writes keys here; Lambda authorizer reads them.
+    // -------------------------------------------------------
+    this.usersTable = new dynamodb.Table(this, 'UsersTable', {
+      tableName: `mnemora-users-${stage}`,
+      partitionKey: { name: 'github_id', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
+      removalPolicy: isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+      deletionProtection: isProd,
+    });
+
+    // GSI for authorizer: look up user by API key hash in O(1)
+    this.usersTable.addGlobalSecondaryIndex({
+      indexName: 'api-key-index',
+      partitionKey: { name: 'api_key_hash', type: dynamodb.AttributeType.STRING },
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
@@ -197,6 +219,7 @@ export class MnemoraStack extends cdk.Stack {
       AURORA_SECRET_ARN: this.auroraCluster.secret?.secretArn ?? '',
       AURORA_DB_NAME: 'mnemora',
       EPISODE_BUCKET_NAME: this.episodeBucket.bucketName,
+      USERS_TABLE_NAME: this.usersTable.tableName,
     };
 
     // Bundle Python deps (pydantic) into the Lambda deployment package.
@@ -312,6 +335,7 @@ export class MnemoraStack extends cdk.Stack {
     // IAM grants — least privilege per function
     // -------------------------------------------------------
     this.stateTable.grantReadData(authFn);
+    this.usersTable.grantReadData(authFn);
 
     this.stateTable.grantReadWriteData(stateFn);
 
@@ -931,6 +955,12 @@ export class MnemoraStack extends cdk.Stack {
       value: alertTopic.topicArn,
       description: 'SNS topic ARN for Mnemora alerts',
       exportName: `mnemora-alerts-topic-arn-${stage}`,
+    });
+
+    new cdk.CfnOutput(this, 'UsersTableName', {
+      value: this.usersTable.tableName,
+      description: 'DynamoDB users table name',
+      exportName: `mnemora-users-table-${stage}`,
     });
   }
 }

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 # Ensure test env vars are set before importing the handler.
 os.environ.setdefault("MNEMORA_TEST_API_KEY", "test-key-for-unit-tests")
@@ -127,7 +128,9 @@ class TestAuthorizerInvalidKey:
         self, mock_context: MagicMock, mock_event_factory: Any
     ) -> None:
         # Arrange — partial match of the valid key
-        event = mock_event_factory(headers={"authorization": "Bearer partial-wrong-key"})
+        event = mock_event_factory(
+            headers={"authorization": "Bearer partial-wrong-key"}
+        )
 
         # Act
         result = handler(event, mock_context)
@@ -161,3 +164,109 @@ class TestAuthorizerInvalidKey:
         assert "context" in result
         assert result["isAuthorized"] is False
         assert isinstance(result["context"], dict)
+
+
+class TestAuthorizerDynamoDBLookup:
+    """Tests for DynamoDB-backed API key lookup."""
+
+    def test_dynamo_lookup_finds_valid_key(
+        self, mock_context: MagicMock, mock_event_factory: Any
+    ) -> None:
+        """Key not in env vars but present in DynamoDB should be authorized."""
+        import handlers.auth as auth_mod
+
+        dynamo_key = "mnm_dynamo_test_key_abc123"
+        key_hash = hashlib.sha256(dynamo_key.encode()).hexdigest()
+
+        mock_client = MagicMock()
+        mock_client.query.return_value = {
+            "Items": [
+                {
+                    "github_id": {"S": "12345"},
+                    "api_key_hash": {"S": key_hash},
+                }
+            ]
+        }
+
+        event = mock_event_factory(headers={"authorization": f"Bearer {dynamo_key}"})
+
+        with (
+            patch.dict(os.environ, {"USERS_TABLE_NAME": "mnemora-users-dev"}),
+            patch.object(auth_mod, "_dynamo_client", mock_client),
+        ):
+            result = handler(event, mock_context)
+
+        assert result["isAuthorized"] is True
+        assert result["context"]["tenantId"] == "github:12345"
+        mock_client.query.assert_called_once()
+
+    def test_dynamo_lookup_rejects_unknown_key(
+        self, mock_context: MagicMock, mock_event_factory: Any
+    ) -> None:
+        """Key not in env vars and not in DynamoDB should be denied."""
+        import handlers.auth as auth_mod
+
+        mock_client = MagicMock()
+        mock_client.query.return_value = {"Items": []}
+
+        event = mock_event_factory(
+            headers={"authorization": "Bearer mnm_unknown_key_xyz"}
+        )
+
+        with (
+            patch.dict(os.environ, {"USERS_TABLE_NAME": "mnemora-users-dev"}),
+            patch.object(auth_mod, "_dynamo_client", mock_client),
+        ):
+            result = handler(event, mock_context)
+
+        assert result["isAuthorized"] is False
+
+    def test_dynamo_lookup_skipped_without_table_name(
+        self, mock_context: MagicMock, mock_event_factory: Any
+    ) -> None:
+        """Without USERS_TABLE_NAME, DynamoDB lookup is skipped."""
+        event = mock_event_factory(
+            headers={"authorization": "Bearer mnm_no_table_configured"}
+        )
+
+        # Remove USERS_TABLE_NAME if set
+        env = {k: v for k, v in os.environ.items() if k != "USERS_TABLE_NAME"}
+        with patch.dict(os.environ, env, clear=True):
+            result = handler(event, mock_context)
+
+        assert result["isAuthorized"] is False
+
+    def test_env_var_keys_still_work_with_dynamo_configured(
+        self, mock_context: MagicMock, mock_event_factory: Any
+    ) -> None:
+        """Env-var test keys should take priority over DynamoDB lookup."""
+        event = mock_event_factory(
+            headers={"authorization": f"Bearer {VALID_TEST_KEY}"}
+        )
+
+        with patch.dict(os.environ, {"USERS_TABLE_NAME": "mnemora-users-dev"}):
+            result = handler(event, mock_context)
+
+        assert result["isAuthorized"] is True
+        assert result["context"]["tenantId"] == "test-tenant"
+
+    def test_dynamo_error_returns_deny(
+        self, mock_context: MagicMock, mock_event_factory: Any
+    ) -> None:
+        """DynamoDB errors should deny access, not crash."""
+        import handlers.auth as auth_mod
+
+        mock_client = MagicMock()
+        mock_client.query.side_effect = Exception("DynamoDB unreachable")
+
+        event = mock_event_factory(
+            headers={"authorization": "Bearer mnm_error_test_key"}
+        )
+
+        with (
+            patch.dict(os.environ, {"USERS_TABLE_NAME": "mnemora-users-dev"}),
+            patch.object(auth_mod, "_dynamo_client", mock_client),
+        ):
+            result = handler(event, mock_context)
+
+        assert result["isAuthorized"] is False

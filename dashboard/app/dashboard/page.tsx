@@ -1,9 +1,9 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { StatCard } from "@/components/stat-card";
-import { ApiKeyCard } from "@/components/api-key-card";
+import { ApiKeyManager } from "@/components/api-key-manager";
 import { HealthIndicator } from "@/components/health-indicator";
-import { CheckCircle2, Plus } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
@@ -94,15 +94,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Create API Key button */}
-        <button
-          type="button"
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-[#2DD4BF] text-[#09090B] text-sm font-semibold hover:bg-[#2DD4BF]/90 transition-colors duration-150 flex-shrink-0"
-          aria-label="Create a new API key"
-        >
-          <Plus className="w-3.5 h-3.5" aria-hidden="true" />
-          Create API Key
-        </button>
+        {/* Create API Key — handled by ApiKeyManager card below */}
       </div>
 
       {/* Quick stats */}
@@ -169,10 +161,7 @@ export default async function DashboardPage() {
         </article>
 
         {/* API Key card */}
-        <ApiKeyCard
-          maskedKey="mnm_****...****7f3a"
-          createdLabel="5 days ago"
-        />
+        <ApiKeyManager />
       </section>
 
       {/* Quick links */}
