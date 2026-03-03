@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   Eye,
   EyeOff,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -25,6 +26,8 @@ export function ApiKeyManager() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [revoking, setRevoking] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [confirmRegen, setConfirmRegen] = useState(false);
   const [plaintextKey, setPlaintextKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [copiedMasked, setCopiedMasked] = useState(false);
@@ -86,6 +89,32 @@ export function ApiKeyManager() {
       toast.error("Failed to revoke API key");
     } finally {
       setRevoking(false);
+    }
+  }
+
+  async function handleRegenerate() {
+    setRegenerating(true);
+    setError(null);
+    try {
+      // POST now upserts — generates new key, preserves tier/metadata
+      const res = await fetch("/api/keys", { method: "POST" });
+      if (!res.ok) throw new Error("Failed to regenerate key");
+      const data = await res.json();
+      setPlaintextKey(data.key);
+      setKeyVisible(true);
+      setConfirmRegen(false);
+      setKeyData({
+        has_key: true,
+        prefix: data.prefix,
+        tier: data.tier,
+        created_at: data.created_at,
+      });
+      toast.success("API key regenerated");
+    } catch {
+      setError("Failed to regenerate API key");
+      toast.error("Failed to regenerate API key");
+    } finally {
+      setRegenerating(false);
     }
   }
 
@@ -286,6 +315,37 @@ export function ApiKeyManager() {
 
       {error && <p className="text-xs text-red-400">{error}</p>}
 
+      {/* Inline regeneration confirmation */}
+      {confirmRegen && (
+        <div className="flex items-start gap-2 rounded-sm border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+          <AlertTriangle
+            className="w-4 h-4 text-amber-500 mt-0.5 shrink-0"
+            aria-hidden="true"
+          />
+          <div className="flex-1">
+            <p className="text-xs text-amber-400">
+              This will invalidate your current key. Any services using it will
+              stop working.
+            </p>
+            <div className="mt-2 flex gap-2">
+              <button
+                onClick={handleRegenerate}
+                disabled={regenerating}
+                className="px-2.5 py-1 text-xs rounded-sm bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 transition-colors duration-150 disabled:opacity-50"
+              >
+                {regenerating ? "Regenerating..." : "Yes, regenerate"}
+              </button>
+              <button
+                onClick={() => setConfirmRegen(false)}
+                className="px-2.5 py-1 text-xs rounded-sm border border-[#3F3F46] text-[#71717A] hover:text-[#A1A1AA] transition-colors duration-150"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 text-xs text-[#71717A]">
           {keyData.created_at && (
@@ -296,14 +356,24 @@ export function ApiKeyManager() {
           </span>
         </div>
 
-        <button
-          onClick={handleRevoke}
-          disabled={revoking}
-          className="flex items-center gap-1.5 h-7 px-2.5 text-xs rounded-sm border border-[#3F3F46] bg-transparent text-red-500 hover:text-red-400 hover:border-red-500/50 hover:bg-red-500/5 transition-colors duration-150 disabled:opacity-50"
-        >
-          <Trash2 className="w-3 h-3" aria-hidden="true" />
-          {revoking ? "Revoking..." : "Revoke"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setConfirmRegen(true)}
+            disabled={regenerating || confirmRegen}
+            className="flex items-center gap-1.5 h-7 px-2.5 text-xs rounded-sm border border-[#3F3F46] bg-transparent text-[#A1A1AA] hover:text-[#FAFAFA] hover:border-[#52525B] transition-colors duration-150 disabled:opacity-50"
+          >
+            <RefreshCw className="w-3 h-3" aria-hidden="true" />
+            Regenerate
+          </button>
+          <button
+            onClick={handleRevoke}
+            disabled={revoking}
+            className="flex items-center gap-1.5 h-7 px-2.5 text-xs rounded-sm border border-[#3F3F46] bg-transparent text-red-500 hover:text-red-400 hover:border-red-500/50 hover:bg-red-500/5 transition-colors duration-150 disabled:opacity-50"
+          >
+            <Trash2 className="w-3 h-3" aria-hidden="true" />
+            {revoking ? "Revoking..." : "Revoke"}
+          </button>
+        </div>
       </div>
     </article>
   );

@@ -5,7 +5,6 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
   DynamoDBDocumentClient,
   GetCommand,
-  PutCommand,
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 import crypto from "crypto";
@@ -39,30 +38,43 @@ export async function POST() {
 
   const now = new Date().toISOString();
 
-  await docClient.send(
-    new PutCommand({
+  // Use UpdateCommand (upsert) so we never overwrite existing tier/created_at.
+  // if_not_exists preserves paid tiers and original creation date on regeneration.
+  const result = await docClient.send(
+    new UpdateCommand({
       TableName: TABLE_NAME,
-      Item: {
-        github_id: githubId,
-        email: session.user.email ?? "",
-        github_username: session.user.name ?? "",
-        display_name: session.user.name ?? "",
-        avatar_url: session.user.image ?? "",
-        api_key_hash: keyHash,
-        api_key_prefix: keyPrefix,
-        tier: "free",
-        created_at: now,
-        updated_at: now,
-        last_login: now,
+      Key: { github_id: githubId },
+      UpdateExpression: [
+        "SET api_key_hash = :hash",
+        "api_key_prefix = :prefix",
+        "email = if_not_exists(email, :email)",
+        "github_username = if_not_exists(github_username, :username)",
+        "display_name = if_not_exists(display_name, :displayname)",
+        "avatar_url = :avatar",
+        "tier = if_not_exists(tier, :tier)",
+        "created_at = if_not_exists(created_at, :now)",
+        "updated_at = :now",
+        "last_login = :now",
+      ].join(", "),
+      ExpressionAttributeValues: {
+        ":hash": keyHash,
+        ":prefix": keyPrefix,
+        ":email": session.user.email ?? "",
+        ":username": session.user.name ?? "",
+        ":displayname": session.user.name ?? "",
+        ":avatar": session.user.image ?? "",
+        ":tier": "free",
+        ":now": now,
       },
+      ReturnValues: "ALL_NEW",
     })
   );
 
   return NextResponse.json({
     key: rawKey,
     prefix: keyPrefix,
-    tier: "free",
-    created_at: now,
+    tier: result.Attributes?.tier ?? "free",
+    created_at: result.Attributes?.created_at ?? now,
   });
 }
 
