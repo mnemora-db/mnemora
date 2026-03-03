@@ -1,10 +1,9 @@
-import { ApiCallsChart } from "@/components/charts/api-calls-chart";
-import { EndpointChart } from "@/components/charts/endpoint-chart";
-import { StorageChart } from "@/components/charts/storage-chart";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { getUsageStats } from "@/lib/mnemora-api";
+import { StatCard } from "@/components/stat-card";
+import { BarChart3 } from "lucide-react";
 import {
-  mockChartData,
-  mockEndpointStats,
-  mockStorageBreakdown,
   mockCostEstimates,
 } from "@/lib/mock-data";
 
@@ -12,7 +11,10 @@ function totalCost(costs: { cost: number }[]): number {
   return costs.reduce((sum, c) => sum + c.cost, 0);
 }
 
-export default function UsagePage() {
+export default async function UsagePage() {
+  const session = await getServerSession(authOptions);
+  const githubId = session?.user?.id ?? "";
+  const stats = await getUsageStats(githubId);
   const total = totalCost(mockCostEstimates);
 
   return (
@@ -27,60 +29,81 @@ export default function UsagePage() {
         </p>
       </div>
 
-      {/* API calls over time */}
-      <section aria-label="API calls over time">
-        <div className="rounded-md border border-[#27272A] bg-[#18181B]">
-          <div className="px-5 py-4 border-b border-[#27272A]">
-            <h2 className="text-sm font-medium text-[#FAFAFA]">
-              API Calls — Last 30 Days
-            </h2>
-            <p className="text-xs text-[#71717A] mt-0.5">
-              Daily request volume across all endpoints.
-            </p>
-          </div>
-          <div className="px-5 py-5">
-            <ApiCallsChart data={mockChartData} />
+      {/* Live stats */}
+      <section aria-label="Live usage stats">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <StatCard
+            label="Active Agents"
+            value={String(stats.activeAgents)}
+          />
+          <StatCard
+            label="State Sessions"
+            value={String(stats.totalSessions ?? 0)}
+          />
+          <StatCard
+            label="API Calls Today"
+            value={
+              stats.apiCallsToday > 0
+                ? stats.apiCallsToday.toLocaleString()
+                : "—"
+            }
+            subLabel={
+              stats.apiCallsToday === 0 ? "Metrics coming soon" : undefined
+            }
+          />
+          <StatCard
+            label="Storage Used"
+            value={
+              stats.storageGb > 0 ? `${stats.storageGb} GB` : "—"
+            }
+            subLabel={
+              stats.storageGb === 0 ? "Metrics coming soon" : undefined
+            }
+          />
+        </div>
+      </section>
+
+      {/* Tier info */}
+      <section aria-label="Current tier">
+        <div className="rounded-md border border-[#27272A] bg-[#18181B] px-5 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-[#71717A] uppercase tracking-wide">
+                Current Tier
+              </p>
+              <p className="mt-1 text-lg font-semibold text-[#FAFAFA]">Free</p>
+              <p className="mt-0.5 text-xs text-[#71717A]">
+                100K API calls/month · 1 GB storage · 10 agents
+              </p>
+            </div>
+            <span className="px-2.5 py-1 rounded-md bg-[#2DD4BF]/10 text-[#2DD4BF] text-xs font-semibold uppercase tracking-wide border border-[#2DD4BF]/20">
+              Free
+            </span>
           </div>
         </div>
       </section>
 
-      {/* Two-chart row */}
-      <section
-        aria-label="Endpoint and storage breakdown"
-        className="grid grid-cols-1 gap-3 lg:grid-cols-2"
-      >
-        {/* Calls by endpoint */}
-        <div className="rounded-md border border-[#27272A] bg-[#18181B]">
-          <div className="px-5 py-4 border-b border-[#27272A]">
-            <h2 className="text-sm font-medium text-[#FAFAFA]">
-              Calls by Endpoint
-            </h2>
-            <p className="text-xs text-[#71717A] mt-0.5">
-              Request distribution this month.
-            </p>
+      {/* Charts placeholder — requires CloudWatch integration */}
+      <section aria-label="API call history">
+        <div className="rounded-md border border-dashed border-[#3F3F46] bg-[#18181B]/50 px-6 py-10 flex flex-col items-center text-center">
+          <div className="w-12 h-12 rounded-lg bg-[#111114] border border-[#27272A] flex items-center justify-center mb-4">
+            <BarChart3
+              className="w-6 h-6 text-[#71717A]"
+              aria-hidden="true"
+            />
           </div>
-          <div className="px-5 py-5">
-            <EndpointChart data={mockEndpointStats} />
-          </div>
-        </div>
-
-        {/* Storage breakdown */}
-        <div className="rounded-md border border-[#27272A] bg-[#18181B]">
-          <div className="px-5 py-4 border-b border-[#27272A]">
-            <h2 className="text-sm font-medium text-[#FAFAFA]">
-              Storage Breakdown
-            </h2>
-            <p className="text-xs text-[#71717A] mt-0.5">
-              Total: 2.4 GB across all storage backends.
-            </p>
-          </div>
-          <div className="px-5 py-5">
-            <StorageChart data={mockStorageBreakdown} />
-          </div>
+          <h2 className="text-sm font-semibold text-[#FAFAFA]">
+            Usage charts coming soon
+          </h2>
+          <p className="mt-1.5 text-sm text-[#71717A] max-w-sm">
+            Detailed API call volume, endpoint distribution, and storage
+            breakdown charts will appear here once the CloudWatch metrics
+            pipeline is connected.
+          </p>
         </div>
       </section>
 
-      {/* Cost estimate */}
+      {/* Cost estimate — estimated based on AWS pricing */}
       <section aria-label="Cost estimate">
         <div className="rounded-md border border-[#27272A] bg-[#18181B]">
           <div className="px-5 py-4 border-b border-[#27272A]">
@@ -88,12 +111,15 @@ export default function UsagePage() {
               Cost Estimate
             </h2>
             <p className="text-xs text-[#71717A] mt-0.5">
-              Estimates based on current usage patterns.
+              Estimated based on current usage and AWS pricing.
             </p>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm" aria-label="Cost estimates by service">
+            <table
+              className="w-full text-sm"
+              aria-label="Cost estimates by service"
+            >
               <thead>
                 <tr className="border-b border-[#27272A]">
                   <th

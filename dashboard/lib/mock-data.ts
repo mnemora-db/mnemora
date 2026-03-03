@@ -27,6 +27,7 @@ export interface UsageStat {
   apiCallsMonth: number;
   storageGb: number;
   activeAgents: number;
+  totalSessions?: number;
 }
 
 export interface ChartDataPoint {

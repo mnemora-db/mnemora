@@ -3,40 +3,34 @@ import { authOptions } from "@/lib/auth";
 import { StatCard } from "@/components/stat-card";
 import { ApiKeyManager } from "@/components/api-key-manager";
 import { HealthIndicator } from "@/components/health-indicator";
-import { CheckCircle2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { CheckCircle2, AlertTriangle, Terminal } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  mockUsageStats,
-  mockApiCalls,
-  type ApiCall,
-} from "@/lib/mock-data";
+import { getHealth, getUsageStats, type HealthStatus } from "@/lib/mnemora-api";
 
-function formatTimestamp(isoString: string): string {
-  const date = new Date(isoString);
-  return date.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
+function overallBadge(health: HealthStatus) {
+  if (health.ok) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-green-500">
+        <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
+        All Systems Operational
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-1.5 text-xs text-amber-500">
+      <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
+      Issues Detected
+    </div>
+  );
 }
 
-function statusColor(status: number): string {
-  if (status >= 500) return "text-red-500";
-  if (status >= 400) return "text-amber-500";
-  return "text-green-500";
-}
-
-function methodColor(method: ApiCall["method"]): string {
-  const colors: Record<ApiCall["method"], string> = {
-    GET: "text-blue-400",
-    POST: "text-green-400",
-    PUT: "text-amber-400",
-    DELETE: "text-red-400",
-  };
-  return colors[method];
+function timeSince(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const secs = Math.floor(diffMs / 1000);
+  if (secs < 60) return `${secs}s ago`;
+  const mins = Math.floor(secs / 60);
+  return `${mins}m ago`;
 }
 
 const QUICK_LINKS: Array<{ label: string; description: string; href: string }> =
@@ -44,7 +38,7 @@ const QUICK_LINKS: Array<{ label: string; description: string; href: string }> =
     {
       label: "Memory Browser",
       description: "Inspect and search stored memories",
-      href: "/dashboard/memory",
+      href: "/dashboard/agents",
     },
     {
       label: "Agents",
@@ -54,7 +48,7 @@ const QUICK_LINKS: Array<{ label: string; description: string; href: string }> =
     {
       label: "API Keys",
       description: "Create and rotate API keys",
-      href: "/dashboard/keys",
+      href: "/dashboard/api-keys",
     },
     {
       label: "Usage & Billing",
@@ -65,7 +59,13 @@ const QUICK_LINKS: Array<{ label: string; description: string; href: string }> =
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
-  const stats = mockUsageStats;
+  const githubId = session?.user?.id ?? "";
+
+  // Fetch real data in parallel
+  const [health, stats] = await Promise.all([
+    getHealth(),
+    getUsageStats(githubId),
+  ]);
 
   const userName = session?.user?.name ?? "there";
   const avatarUrl = session?.user?.image ?? null;
@@ -93,31 +93,45 @@ export default async function DashboardPage() {
             </p>
           </div>
         </div>
-
-        {/* Create API Key — handled by ApiKeyManager card below */}
       </div>
 
       {/* Quick stats */}
       <section aria-label="Quick stats">
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard
+            label="Active Agents"
+            value={String(stats.activeAgents)}
+            subLabel={
+              stats.activeAgents === 0
+                ? "Connect your first agent"
+                : undefined
+            }
+          />
+          <StatCard
+            label="State Sessions"
+            value={String(stats.totalSessions ?? 0)}
+          />
+          <StatCard
             label="API Calls Today"
-            value={stats.apiCallsToday.toLocaleString()}
-            trend={stats.apiCallsTodayDelta}
-            trendLabel="vs yesterday"
+            value={
+              stats.apiCallsToday > 0
+                ? stats.apiCallsToday.toLocaleString()
+                : "—"
+            }
+            subLabel={
+              stats.apiCallsToday === 0 ? "Metrics coming soon" : undefined
+            }
           />
           <StatCard
             label="API Calls This Month"
-            value={stats.apiCallsMonth.toLocaleString()}
-          />
-          <StatCard
-            label="Storage Used"
-            value={`${stats.storageGb} GB`}
-            subLabel="DynamoDB · Aurora · S3"
-          />
-          <StatCard
-            label="Active Agents"
-            value={String(stats.activeAgents)}
+            value={
+              stats.apiCallsMonth > 0
+                ? stats.apiCallsMonth.toLocaleString()
+                : "—"
+            }
+            subLabel={
+              stats.apiCallsMonth === 0 ? "Metrics coming soon" : undefined
+            }
           />
         </div>
       </section>
@@ -127,7 +141,7 @@ export default async function DashboardPage() {
         aria-label="System health and API key"
         className="grid grid-cols-1 gap-3 lg:grid-cols-2"
       >
-        {/* Health card */}
+        {/* Health card — real data from /v1/health */}
         <article
           className="rounded-md border border-[#27272A] bg-[#18181B] px-5 py-4"
           aria-label="System health"
@@ -136,18 +150,10 @@ export default async function DashboardPage() {
             <p className="text-xs font-medium text-[#71717A] uppercase tracking-wide">
               API Health
             </p>
-            <div className="flex items-center gap-1.5 text-xs text-green-500">
-              <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
-              All Systems Operational
-            </div>
+            {overallBadge(health)}
           </div>
           <ul className="space-y-2.5">
-            {[
-              { label: "API Gateway", status: "healthy" as const },
-              { label: "DynamoDB", status: "healthy" as const },
-              { label: "Aurora (pgvector)", status: "healthy" as const },
-              { label: "S3", status: "healthy" as const },
-            ].map((service) => (
+            {health.services.map((service) => (
               <li key={service.label}>
                 <HealthIndicator
                   status={service.status}
@@ -157,10 +163,14 @@ export default async function DashboardPage() {
               </li>
             ))}
           </ul>
-          <p className="mt-4 text-xs text-[#52525B]">Last checked 30s ago</p>
+          <p className="mt-4 text-xs text-[#52525B]">
+            {health.ok
+              ? `v${health.version} · Last checked ${timeSince(health.checkedAt)}`
+              : `Last checked ${timeSince(health.checkedAt)}`}
+          </p>
         </article>
 
-        {/* API Key card */}
+        {/* API Key card — real data */}
         <ApiKeyManager />
       </section>
 
@@ -185,72 +195,42 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      {/* Recent activity */}
-      <section aria-label="Recent API activity">
-        <div className="rounded-md border border-[#27272A] bg-[#18181B] overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#27272A]">
-            <h2 className="text-sm font-medium text-[#FAFAFA]">
-              Recent Activity
-            </h2>
-            <p className="text-xs text-[#71717A] mt-0.5">
-              Last 10 API requests
-            </p>
-          </div>
+      {/* Getting started — shown when no agents */}
+      {stats.activeAgents === 0 && (
+        <section aria-label="Getting started">
+          <div className="rounded-md border border-[#27272A] bg-[#18181B] px-5 py-6">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-md bg-[#111114] border border-[#27272A] flex items-center justify-center shrink-0">
+                <Terminal
+                  className="w-5 h-5 text-[#2DD4BF]"
+                  aria-hidden="true"
+                />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-[#FAFAFA]">
+                  Connect your first agent
+                </h2>
+                <p className="mt-1 text-sm text-[#71717A] max-w-lg">
+                  Install the SDK and start storing agent memory in under 5
+                  minutes. Generate an API key above, then:
+                </p>
+                <pre className="mt-3 px-4 py-3 bg-[#111114] border border-[#27272A] rounded-md text-xs font-mono text-[#A1A1AA] overflow-x-auto">
+                  <code>{`pip install mnemora-sdk
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs" aria-label="Recent API calls">
-              <thead>
-                <tr className="border-b border-[#27272A]">
-                  {["Time", "Method", "Path", "Status", "Latency"].map(
-                    (col) => (
-                      <th
-                        key={col}
-                        className="px-5 py-2.5 text-left font-medium text-[#71717A] uppercase tracking-wide text-[10px]"
-                        scope="col"
-                      >
-                        {col}
-                      </th>
-                    )
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {mockApiCalls.map((call, idx) => (
-                  <tr
-                    key={call.id}
-                    className={cn(
-                      "border-b border-[#27272A] last:border-0",
-                      idx % 2 === 0 ? "" : "bg-[#111114]/40"
-                    )}
-                  >
-                    <td className="px-5 py-3 font-mono text-[#71717A] whitespace-nowrap">
-                      {formatTimestamp(call.timestamp)}
-                    </td>
-                    <td className="px-5 py-3 font-mono whitespace-nowrap">
-                      <span
-                        className={cn("font-semibold", methodColor(call.method))}
-                      >
-                        {call.method}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 font-mono text-[#A1A1AA] whitespace-nowrap">
-                      {call.path}
-                    </td>
-                    <td className="px-5 py-3 font-mono whitespace-nowrap">
-                      <span className={statusColor(call.status)}>
-                        {call.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 font-mono text-[#A1A1AA] whitespace-nowrap">
-                      {call.latencyMs}ms
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+from mnemora import Mnemora
+
+client = Mnemora(api_key="mnm_...")
+client.state.put(
+    agent_id="my-agent",
+    session_id="session-1",
+    data={"task": "hello world"}
+)`}</code>
+                </pre>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 }
