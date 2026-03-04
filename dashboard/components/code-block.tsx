@@ -8,7 +8,7 @@ export function CodeBlock({ code }: { code: string }) {
 
   async function handleCopy() {
     try {
-      await navigator.clipboard.writeText(code);
+      await navigator.clipboard.writeText(code.trim());
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {

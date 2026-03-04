@@ -579,17 +579,40 @@ function HeroSection() {
 }
 
 // ─── Integrations ─────────────────────────────────────────────────────────────
-const INTEGRATIONS = [
-  { name: "LangGraph", desc: "Drop-in CheckpointSaver", icon: Activity },
-  { name: "LangChain", desc: "Memory retriever + tool", icon: Brain },
-  { name: "CrewAI", desc: "Shared agent memory", icon: Users },
-  { name: "AutoGen", desc: "Persistent state store", icon: Database },
-  { name: "OpenAI Agents SDK", desc: "Function tool integration", icon: Code2 },
+const INTEGRATIONS_ROW_1 = [
+  { name: "LangGraph", desc: "CheckpointSaver", icon: Activity },
+  { name: "LangChain", desc: "Memory retriever", icon: Brain },
+  { name: "CrewAI", desc: "Shared memory", icon: Users },
+  { name: "AutoGen", desc: "State store", icon: Database },
+  { name: "OpenAI Agents SDK", desc: "Tool integration", icon: Code2 },
 ];
+
+const INTEGRATIONS_ROW_2 = [
+  { name: "REST API", desc: "Direct access", icon: Server },
+  { name: "Python SDK", desc: "Async + sync", icon: Code2 },
+  { name: "pgvector", desc: "Vector search", icon: Layers },
+  { name: "DynamoDB", desc: "Sub-10ms state", icon: Database },
+  { name: "Bedrock", desc: "Titan embeddings", icon: Brain },
+];
+
+function MarqueePill({ name, desc, icon: Icon }: { name: string; desc: string; icon: React.ComponentType<{ className?: string }> }) {
+  return (
+    <div className="flex items-center gap-3 px-5 py-2.5 rounded-full bg-[#111114]/60 border border-[#27272A]/40 shrink-0 hover:border-[#3F3F46] hover:bg-[#18181B]/60 transition-colors duration-200">
+      <Icon className="w-4 h-4 text-[#2DD4BF]" />
+      <span className="text-sm font-medium text-[#FAFAFA] whitespace-nowrap">{name}</span>
+      <span className="text-xs text-[#52525B] whitespace-nowrap">{desc}</span>
+    </div>
+  );
+}
 
 function IntegrationsSection() {
   return (
     <section className="relative py-16 px-4 border-y border-[#27272A]/50 overflow-hidden">
+      <style>{`
+        @keyframes marquee-left { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        @keyframes marquee-right { 0% { transform: translateX(-50%); } 100% { transform: translateX(0); } }
+        .marquee-track:hover { animation-play-state: paused; }
+      `}</style>
       <div
         className="absolute inset-0 pointer-events-none"
         style={{ background: "linear-gradient(180deg, rgba(17,17,20,0.6) 0%, rgba(9,9,11,0.4) 50%, rgba(17,17,20,0.6) 100%)" }}
@@ -603,18 +626,18 @@ function IntegrationsSection() {
             Built for your stack
           </h2>
         </div>
-        <div className="flex gap-3 overflow-x-auto pb-2 sm:pb-0 sm:grid sm:grid-cols-5 sm:overflow-visible scrollbar-hide">
-          {INTEGRATIONS.map(({ name, desc, icon: Icon }) => (
-            <div
-              key={name}
-              className="shrink-0 w-44 sm:w-auto rounded-xl border border-[#27272A] bg-[#111114]/80 p-4 hover:border-[#3F3F46] hover:bg-[#18181B]/60 transition-all duration-200"
-            >
-              <div className="w-8 h-8 rounded-lg bg-[#18181B] border border-[#27272A] flex items-center justify-center mb-3">
-                <Icon className="w-4 h-4 text-[#2DD4BF]" />
-              </div>
-              <p className="text-sm font-semibold text-[#FAFAFA] mb-0.5">{name}</p>
-              <p className="text-xs text-[#71717A]">{desc}</p>
-            </div>
+      </div>
+      <div className="relative">
+        <div className="absolute left-0 top-0 bottom-0 w-20 sm:w-32 z-10 pointer-events-none" style={{ background: "linear-gradient(to right, #09090B, transparent)" }} />
+        <div className="absolute right-0 top-0 bottom-0 w-20 sm:w-32 z-10 pointer-events-none" style={{ background: "linear-gradient(to left, #09090B, transparent)" }} />
+        <div className="marquee-track flex gap-4 mb-4" style={{ animation: "marquee-left 28s linear infinite", width: "max-content" }}>
+          {[...INTEGRATIONS_ROW_1, ...INTEGRATIONS_ROW_1].map((item, i) => (
+            <MarqueePill key={`r1-${i}`} {...item} />
+          ))}
+        </div>
+        <div className="marquee-track flex gap-4" style={{ animation: "marquee-right 32s linear infinite", width: "max-content" }}>
+          {[...INTEGRATIONS_ROW_2, ...INTEGRATIONS_ROW_2].map((item, i) => (
+            <MarqueePill key={`r2-${i}`} {...item} />
           ))}
         </div>
       </div>
@@ -627,16 +650,19 @@ function ProblemSection() {
   const problems = [
     {
       icon: Database,
+      num: "01",
       title: "Four databases to stitch together",
       body: "Redis for state. Pinecone for vectors. Postgres for structured data. S3 for logs. Four billing accounts, four clients, zero unified memory layer.",
     },
     {
       icon: Layers,
+      num: "02",
       title: "No unified query layer",
       body: "State lives here. Vectors live there. Events are somewhere else. You write glue code instead of writing agents.",
     },
     {
       icon: Zap,
+      num: "03",
       title: "Agents forget everything",
       body: "Without persistence, every invocation starts from scratch. Context, preferences, and history vanish between calls.",
     },
@@ -658,21 +684,22 @@ function ProblemSection() {
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-3 gap-4">
-          {problems.map(({ icon: Icon, title, body }) => (
-            <div
-              key={title}
-              className="group relative rounded-xl p-px bg-gradient-to-b from-[#2DD4BF]/10 via-[#27272A] to-[#A78BFA]/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(45,212,191,0.08)]"
-            >
-              <div className="rounded-[11px] bg-[#111114]/80 backdrop-blur-sm p-6 h-full">
-                <div className="w-9 h-9 rounded-lg bg-[#18181B] border border-[#27272A] flex items-center justify-center mb-4">
-                  <Icon className="w-4 h-4 text-[#71717A]" />
+        <div className="max-w-2xl mx-auto">
+          {problems.map(({ icon: Icon, num, title, body }, i) => (
+            <div key={title}>
+              <div className="flex items-start gap-5 py-6">
+                <span className="text-2xl font-bold text-[#2DD4BF]/20 font-mono shrink-0 mt-0.5">{num}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2.5 mb-1.5">
+                    <Icon className="w-4 h-4 text-[#52525B] shrink-0" />
+                    <h3 className="text-sm font-semibold text-[#FAFAFA]">{title}</h3>
+                  </div>
+                  <p className="text-xs text-[#71717A] leading-relaxed">{body}</p>
                 </div>
-                <h3 className="text-sm font-semibold text-[#FAFAFA] mb-2">
-                  {title}
-                </h3>
-                <p className="text-xs text-[#71717A] leading-relaxed">{body}</p>
               </div>
+              {i < problems.length - 1 && (
+                <div className="border-t border-[#27272A]/50" />
+              )}
             </div>
           ))}
         </div>

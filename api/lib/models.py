@@ -53,7 +53,7 @@ class SemanticSearchRequest(BaseModel):
         description="Maximum number of results to return",
     )
     threshold: float = Field(
-        default=0.7,
+        default=0.1,
         ge=0.0,
         le=1.0,
         description="Minimum cosine similarity score (0.0–1.0)",
@@ -90,7 +90,7 @@ class StateCreateRequest(BaseModel):
         ..., min_length=1, max_length=256, description="Agent identifier"
     )
     session_id: str = Field(
-        default_factory=lambda: str(uuid.uuid4()),
+        default="default",
         min_length=1,
         max_length=256,
     )

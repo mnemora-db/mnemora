@@ -68,7 +68,7 @@ export function OnboardingGuide() {
 
   async function handleCopy(text: string, type: "pip" | "code") {
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(text.trim());
       if (type === "pip") {
         setCopiedPip(true);
         setTimeout(() => setCopiedPip(false), 2000);

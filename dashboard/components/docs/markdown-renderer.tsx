@@ -26,7 +26,7 @@ function CopyButton({ text }: { text: string }) {
 
   async function handleCopy() {
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(text.trim());
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
