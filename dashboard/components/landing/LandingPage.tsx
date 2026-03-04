@@ -49,32 +49,46 @@ function MnemoraLogo({ size = 20 }: { size?: number }) {
   );
 }
 
-// ─── Animated grid pattern ───────────────────────────────────────────────────
+// ─── Animated grid pattern (circuit-board style) ────────────────────────────
+const GRID_SIZE = 48;
+const GRID_COLS = 20;
+const GRID_ROWS = 12;
+// Pre-compute which cells get a pulse highlight (deterministic pseudo-random)
+const HIGHLIGHT_CELLS = Array.from({ length: GRID_COLS * GRID_ROWS }, (_, i) => {
+  const hash = ((i * 2654435761) >>> 0) % 100;
+  return hash < 12; // ~12% of cells pulse
+});
+
 function AnimatedGrid() {
-  const cols = 12;
-  const rows = 8;
-  const size = 60;
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+    <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
       <svg
-        className="w-full h-full"
+        width={GRID_COLS * GRID_SIZE}
+        height={GRID_ROWS * GRID_SIZE}
         xmlns="http://www.w3.org/2000/svg"
-        style={{ minWidth: cols * size, minHeight: rows * size }}
+        className="opacity-100"
       >
-        {Array.from({ length: cols * rows }, (_, i) => {
-          const col = i % cols;
-          const row = Math.floor(i / cols);
-          const delay = ((col * 0.7 + row * 1.3 + Math.sin(i) * 2) % 6).toFixed(2);
+        {/* Static grid lines */}
+        {Array.from({ length: GRID_COLS + 1 }, (_, i) => (
+          <line key={`v${i}`} x1={i * GRID_SIZE} y1={0} x2={i * GRID_SIZE} y2={GRID_ROWS * GRID_SIZE} stroke="#2DD4BF" strokeOpacity="0.06" strokeWidth="0.5" />
+        ))}
+        {Array.from({ length: GRID_ROWS + 1 }, (_, i) => (
+          <line key={`h${i}`} x1={0} y1={i * GRID_SIZE} x2={GRID_COLS * GRID_SIZE} y2={i * GRID_SIZE} stroke="#2DD4BF" strokeOpacity="0.06" strokeWidth="0.5" />
+        ))}
+        {/* Pulsing highlight squares */}
+        {HIGHLIGHT_CELLS.map((active, i) => {
+          if (!active) return null;
+          const col = i % GRID_COLS;
+          const row = Math.floor(i / GRID_COLS);
+          const delay = ((col * 0.7 + row * 1.1) % 8).toFixed(1);
           return (
             <rect
               key={i}
-              x={col * size}
-              y={row * size}
-              width={size}
-              height={size}
-              fill="none"
-              stroke="#2DD4BF"
-              strokeWidth="0.5"
+              x={col * GRID_SIZE + 1}
+              y={row * GRID_SIZE + 1}
+              width={GRID_SIZE - 2}
+              height={GRID_SIZE - 2}
+              fill="#2DD4BF"
               className="animated-grid-cell"
               style={{ animationDelay: `${delay}s` }}
             />
@@ -564,18 +578,45 @@ function HeroSection() {
   );
 }
 
-// ─── Trust strip ───────────────────────────────────────────────────────────────
-function TrustStrip() {
-  const frameworks = ["LangGraph", "LangChain", "CrewAI", "AutoGen", "OpenAI Agents SDK"];
+// ─── Integrations ─────────────────────────────────────────────────────────────
+const INTEGRATIONS = [
+  { name: "LangGraph", desc: "Drop-in CheckpointSaver", icon: Activity },
+  { name: "LangChain", desc: "Memory retriever + tool", icon: Brain },
+  { name: "CrewAI", desc: "Shared agent memory", icon: Users },
+  { name: "AutoGen", desc: "Persistent state store", icon: Database },
+  { name: "OpenAI Agents SDK", desc: "Function tool integration", icon: Code2 },
+];
+
+function IntegrationsSection() {
   return (
-    <section className="border-y border-[#27272A]/50 bg-[#111114]/40 py-5">
-      <div className="max-w-4xl mx-auto px-4 flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
-        <span className="text-xs text-[#3F3F46]">Works with</span>
-        {frameworks.map((fw) => (
-          <span key={fw} className="text-xs text-[#71717A] font-medium">
-            {fw}
+    <section className="relative py-16 px-4 border-y border-[#27272A]/50 overflow-hidden">
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: "linear-gradient(180deg, rgba(17,17,20,0.6) 0%, rgba(9,9,11,0.4) 50%, rgba(17,17,20,0.6) 100%)" }}
+      />
+      <div className="relative max-w-5xl mx-auto">
+        <div className="text-center mb-10">
+          <span className="text-xs font-semibold text-[#52525B] uppercase tracking-widest">
+            Integrations
           </span>
-        ))}
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#FAFAFA] mt-3 tracking-tight">
+            Built for your stack
+          </h2>
+        </div>
+        <div className="flex gap-3 overflow-x-auto pb-2 sm:pb-0 sm:grid sm:grid-cols-5 sm:overflow-visible scrollbar-hide">
+          {INTEGRATIONS.map(({ name, desc, icon: Icon }) => (
+            <div
+              key={name}
+              className="shrink-0 w-44 sm:w-auto rounded-xl border border-[#27272A] bg-[#111114]/80 p-4 hover:border-[#3F3F46] hover:bg-[#18181B]/60 transition-all duration-200"
+            >
+              <div className="w-8 h-8 rounded-lg bg-[#18181B] border border-[#27272A] flex items-center justify-center mb-3">
+                <Icon className="w-4 h-4 text-[#2DD4BF]" />
+              </div>
+              <p className="text-sm font-semibold text-[#FAFAFA] mb-0.5">{name}</p>
+              <p className="text-xs text-[#71717A]">{desc}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -954,30 +995,30 @@ function WhySection() {
       color: "#2DD4BF",
       title: "No LLM in Your CRUD Path",
       body: "Mem0 and Letta call an LLM for every memory operation, adding latency and token cost. Mnemora does direct database CRUD. State reads are sub-10ms. No LLM overhead, no rate limits, no surprise bills from embedding calls you didn't ask for.",
-      span: true,
     },
     {
       icon: Server,
       color: "#38BDF8",
       title: "Serverless-first",
-      body: "Every component scales to zero when idle. DynamoDB on-demand, Aurora Serverless v2, Lambda, S3. You pay per request. Estimated idle cost: ~$1/month.",
-      span: false,
+      body: "Every component scales to zero when idle. DynamoDB on-demand, Aurora Serverless v2, Lambda, S3. You pay per request.",
     },
     {
       icon: Users,
       color: "#A78BFA",
       title: "Multi-tenant by Default",
-      body: "Each API key is scoped to a tenant. Each agent gets an isolated namespace. Data is never mixed at the database layer. Built for SaaS products with multiple end-users.",
-      span: false,
+      body: "Each API key scoped to a tenant. Data is never mixed at the database layer. Built for SaaS.",
     },
     {
       icon: Activity,
       color: "#FB923C",
       title: "LangGraph Native",
-      body: "Drop in MnemoraCheckpointSaver as your LangGraph checkpointer. Each thread_id maps to a Mnemora agent with optimistic locking to prevent concurrent-write data loss.",
-      span: false,
+      body: "Drop-in MnemoraCheckpointSaver with optimistic locking. Zero config.",
     },
   ];
+
+  const heroCard = reasons[0];
+  const HeroIcon = heroCard.icon;
+  const rest = reasons.slice(1);
 
   return (
     <section className="py-20 px-4">
@@ -991,30 +1032,39 @@ function WhySection() {
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {reasons.map(({ icon: Icon, color, title, body, span }) => (
+        {/* Hero card — full width */}
+        <GlowCard
+          className="group relative rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(45,212,191,0.12)] mb-4"
+          innerClassName="rounded-[11px] bg-[#111114]/80 backdrop-blur-sm p-8 h-full flex gap-5"
+        >
+          <div
+            className="w-11 h-11 rounded-lg shrink-0 flex items-center justify-center border mt-0.5"
+            style={{ background: `${heroCard.color}15`, borderColor: `${heroCard.color}30` }}
+          >
+            <HeroIcon className="w-5 h-5" style={{ color: heroCard.color }} />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">{heroCard.title}</h3>
+            <p className="text-sm text-[#71717A] leading-relaxed max-w-2xl">{heroCard.body}</p>
+          </div>
+        </GlowCard>
+
+        {/* 3-column row */}
+        <div className="grid sm:grid-cols-3 gap-4">
+          {rest.map(({ icon: Icon, color, title, body }) => (
             <GlowCard
               key={title}
-              className={`group relative rounded-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(45,212,191,0.08)] ${
-                span ? "sm:col-span-2" : ""
-              }`}
-              innerClassName="rounded-[11px] bg-[#111114]/80 backdrop-blur-sm p-6 h-full flex gap-4"
+              className="group relative rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(45,212,191,0.12)]"
+              innerClassName="rounded-[11px] bg-[#111114]/80 backdrop-blur-sm p-6 h-full"
             >
               <div
-                className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center border mt-0.5"
-                style={{
-                  background: `${color}15`,
-                  borderColor: `${color}30`,
-                }}
+                className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center border mb-4"
+                style={{ background: `${color}15`, borderColor: `${color}30` }}
               >
                 <Icon className="w-4 h-4" style={{ color }} />
               </div>
-              <div>
-                <h3 className="text-sm font-semibold text-[#FAFAFA] mb-1.5">
-                  {title}
-                </h3>
-                <p className="text-xs text-[#71717A] leading-relaxed">{body}</p>
-              </div>
+              <h3 className="text-sm font-semibold text-[#FAFAFA] mb-1.5">{title}</h3>
+              <p className="text-xs text-[#71717A] leading-relaxed">{body}</p>
             </GlowCard>
           ))}
         </div>
@@ -1412,7 +1462,7 @@ export default function LandingPage() {
       <Navbar />
       <main>
         <HeroSection />
-        <TrustStrip />
+        <IntegrationsSection />
         <ProblemSection />
         <SectionDivider />
         <SolutionSection />

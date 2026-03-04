@@ -91,14 +91,14 @@ html {
 
 /* ─── Animated grid pattern ─────────────────────────────────────────────── */
 
-@keyframes gridFade {
+@keyframes gridPulse {
   0%, 100% { opacity: 0; }
-  50% { opacity: 0.06; }
+  50% { opacity: 0.08; }
 }
 
 .animated-grid-cell {
   opacity: 0;
-  animation: gridFade 4s ease-in-out infinite;
+  animation: gridPulse 5s ease-in-out infinite;
 }
 
 /* ─── Glow card (mouse-following border) ───────────────────────────────── */
@@ -118,11 +118,11 @@ html {
   inset: 0;
   border-radius: inherit;
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity 0.2s;
   background: radial-gradient(
-    400px circle at var(--mouse-x) var(--mouse-y),
-    rgba(45,212,191,0.15),
-    transparent 60%
+    600px circle at var(--mouse-x) var(--mouse-y),
+    rgba(45,212,191,0.30),
+    transparent 50%
   );
   z-index: 1;
   pointer-events: none;
@@ -136,6 +136,10 @@ html {
   position: relative;
   z-index: 2;
 }
+
+/* Hide scrollbar for integration cards on mobile */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* ─── Docs prose styling ─────────────────────────────────────────────────── */
 
