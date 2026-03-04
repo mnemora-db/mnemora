@@ -123,25 +123,11 @@ export default async function DashboardPage() {
           />
           <StatCard
             label="API Calls Today"
-            value={
-              stats.apiCallsToday > 0
-                ? stats.apiCallsToday.toLocaleString()
-                : "—"
-            }
-            subLabel={
-              stats.apiCallsToday === 0 ? "Metrics coming soon" : undefined
-            }
+            value={stats.apiCallsToday.toLocaleString()}
           />
           <StatCard
             label="API Calls This Month"
-            value={
-              stats.apiCallsMonth > 0
-                ? stats.apiCallsMonth.toLocaleString()
-                : "—"
-            }
-            subLabel={
-              stats.apiCallsMonth === 0 ? "Metrics coming soon" : undefined
-            }
+            value={stats.apiCallsMonth.toLocaleString()}
           />
         </div>
       </section>

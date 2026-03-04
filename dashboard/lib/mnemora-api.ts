@@ -13,13 +13,18 @@
  * authenticating through the HTTP API Gateway.
  */
 
-import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
+import {
+  DynamoDBClient,
+  ScanCommand,
+  GetItemCommand,
+} from "@aws-sdk/client-dynamodb";
 import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
 import type { Agent, UsageStat } from "./mock-data";
 
 // ── Config ──────────────────────────────────────────────────────────
 const MNEMORA_API_URL = process.env.MNEMORA_API_URL ?? "";
 const STATE_TABLE = process.env.STATE_TABLE_NAME ?? "mnemora-state-dev";
+const USERS_TABLE = process.env.USERS_TABLE_NAME ?? "mnemora-users-dev";
 
 const ddb = new DynamoDBClient({
   region: process.env.AWS_REGION ?? "us-east-1",
@@ -80,7 +85,7 @@ export async function getHealth(): Promise<HealthStatus> {
 
   try {
     const res = await fetch(`${MNEMORA_API_URL}/v1/health`, {
-      next: { revalidate: 30 },
+      cache: "no-store",
     });
 
     if (!res.ok) {
@@ -194,11 +199,11 @@ export async function getAgents(githubId: string): Promise<Agent[]> {
 // ── Usage Stats ─────────────────────────────────────────────────────
 
 /**
- * Derive basic usage stats from DynamoDB data.
+ * Derive usage stats from DynamoDB data.
  *
- * API call counts, storage metrics, and cost breakdowns require
- * CloudWatch integration (planned). Returns zeros for those fields
- * until the metrics pipeline is wired up.
+ * Reads real per-tenant API call counters from the users table
+ * (populated by the auth Lambda on each authenticated request)
+ * and session counts from the state table.
  */
 export async function getUsageStats(githubId: string): Promise<UsageStat> {
   const agents = await getAgents(githubId);
@@ -225,10 +230,40 @@ export async function getUsageStats(githubId: string): Promise<UsageStat> {
     // Swallow — stats will show 0
   }
 
+  // Read real API call counters from the users table
+  let apiCallsToday = 0;
+  let apiCallsMonth = 0;
+  try {
+    const userResult = await ddb.send(
+      new GetItemCommand({
+        TableName: USERS_TABLE,
+        Key: { github_id: { S: githubId } },
+        ProjectionExpression:
+          "api_calls_today, api_calls_month, last_call_date, last_call_month",
+      })
+    );
+    const item = userResult.Item;
+    if (item) {
+      const today = new Date().toISOString().slice(0, 10);
+      const storedDate = item.last_call_date?.S ?? "";
+      // Only show today's count if the stored date matches today
+      if (storedDate === today) {
+        apiCallsToday = Number(item.api_calls_today?.N ?? "0");
+      }
+      const currentMonth = today.slice(0, 7);
+      const storedMonth = item.last_call_month?.S ?? "";
+      if (storedMonth === currentMonth) {
+        apiCallsMonth = Number(item.api_calls_month?.N ?? "0");
+      }
+    }
+  } catch {
+    // Swallow — counters will show 0
+  }
+
   return {
-    apiCallsToday: 0,
+    apiCallsToday,
     apiCallsTodayDelta: 0,
-    apiCallsMonth: 0,
+    apiCallsMonth,
     storageGb: 0,
     activeAgents: agents.length,
     totalSessions,
