@@ -20,6 +20,11 @@ import {
   BookOpen,
   ExternalLink,
   Menu,
+  MessageSquare,
+  Search,
+  TrendingUp,
+  GitBranch,
+  GraduationCap,
 } from "lucide-react";
 import { HeroCtaButton } from "@/components/auth/hero-cta-button";
 
@@ -1100,6 +1105,116 @@ function WhySection() {
   );
 }
 
+// ─── Use Cases ─────────────────────────────────────────────────────────────────
+const USE_CASES = [
+  {
+    icon: MessageSquare,
+    title: "Customer Support Agent",
+    description:
+      "Remembers every customer interaction, surfaces relevant past tickets, and personalizes responses across channels.",
+    memoryTypes: ["Episodic", "Semantic"],
+    howItWorks:
+      "Episodic memory logs each conversation. Semantic search finds similar past issues to suggest resolutions.",
+  },
+  {
+    icon: Search,
+    title: "Research Agent",
+    description:
+      "Accumulates findings across sessions, deduplicates sources, and builds a searchable knowledge base over time.",
+    memoryTypes: ["Semantic", "Episodic"],
+    howItWorks:
+      "Semantic memory stores and deduplicates research findings. Episodic logs track the full research trail.",
+  },
+  {
+    icon: Code2,
+    title: "Coding Assistant",
+    description:
+      "Maintains project context, remembers architectural decisions, and tracks code review patterns per repository.",
+    memoryTypes: ["State", "Semantic"],
+    howItWorks:
+      "Working state holds active context. Semantic memory recalls past decisions and patterns across sessions.",
+  },
+  {
+    icon: TrendingUp,
+    title: "Sales Agent / CRM",
+    description:
+      "Tracks deal stages, remembers client preferences, and surfaces talking points from previous meetings.",
+    memoryTypes: ["State", "Episodic"],
+    howItWorks:
+      "State tracks deal pipeline status. Episodic memory replays past interactions for personalized follow-ups.",
+  },
+  {
+    icon: GitBranch,
+    title: "Workflow Automation",
+    description:
+      "Persists multi-step workflow state with optimistic locking, checkpoints progress, and resumes on failure.",
+    memoryTypes: ["State", "Procedural"],
+    howItWorks:
+      "LangGraph checkpoints persist workflow state. Procedural memory stores rules and tool definitions.",
+  },
+  {
+    icon: GraduationCap,
+    title: "AI Tutor",
+    description:
+      "Adapts to each learner, tracks mastery across topics, and builds a personalized curriculum over time.",
+    memoryTypes: ["Episodic", "Semantic"],
+    howItWorks:
+      "Episodic memory tracks learning history. Semantic memory stores curriculum knowledge for adaptive recall.",
+  },
+];
+
+function UseCasesSection() {
+  return (
+    <section className="py-20 px-4">
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center mb-12">
+          <span className="text-xs font-semibold text-[#52525B] uppercase tracking-widest">
+            Use Cases
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#FAFAFA] mt-3 tracking-tight">
+            Built for every agent type
+          </h2>
+          <p className="mt-3 text-sm text-[#71717A] max-w-lg mx-auto">
+            From customer support to autonomous research — Mnemora adapts to
+            your agent&apos;s memory needs.
+          </p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {USE_CASES.map(({ icon: Icon, title, description, memoryTypes, howItWorks }) => (
+            <GlowCard
+              key={title}
+              className="group relative rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(45,212,191,0.12)]"
+              innerClassName="rounded-[11px] bg-[#111114]/80 backdrop-blur-sm p-6 h-full flex flex-col"
+            >
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center border border-[#2DD4BF]/30 bg-[#2DD4BF]/[0.08] mb-4">
+                <Icon className="w-4 h-4 text-[#2DD4BF]" />
+              </div>
+              <h3 className="text-sm font-semibold text-[#FAFAFA] mb-1.5">{title}</h3>
+              <p className="text-xs text-[#71717A] leading-relaxed mb-3 flex-1">
+                {description}
+              </p>
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {memoryTypes.map((type) => (
+                  <span
+                    key={type}
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded border border-[#2DD4BF]/30 bg-[#2DD4BF]/[0.08] text-[#2DD4BF]"
+                  >
+                    {type}
+                  </span>
+                ))}
+              </div>
+              <p className="text-[11px] text-[#52525B] italic leading-relaxed">
+                {howItWorks}
+              </p>
+            </GlowCard>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─── FAQ ───────────────────────────────────────────────────────────────────────
 function FAQSection() {
   const [open, setOpen] = useState<number | null>(null);
@@ -1499,6 +1614,8 @@ export default function LandingPage() {
         <ComparisonSection />
         <SectionDivider />
         <WhySection />
+        <SectionDivider />
+        <UseCasesSection />
         <SectionDivider />
         <FAQSection />
         <SectionDivider />

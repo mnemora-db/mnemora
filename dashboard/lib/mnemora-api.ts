@@ -14,6 +14,7 @@
  */
 
 import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
+import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
 import type { Agent, UsageStat } from "./mock-data";
 
 // ── Config ──────────────────────────────────────────────────────────
@@ -23,6 +24,11 @@ const STATE_TABLE = process.env.STATE_TABLE_NAME ?? "mnemora-state-dev";
 const ddb = new DynamoDBClient({
   region: process.env.AWS_REGION ?? "us-east-1",
 });
+const lambdaClient = new LambdaClient({
+  region: process.env.AWS_REGION ?? "us-east-1",
+});
+const SEMANTIC_FUNCTION =
+  process.env.SEMANTIC_FUNCTION_NAME ?? "mnemora-semantic-dev";
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -118,8 +124,9 @@ export async function getHealth(): Promise<HealthStatus> {
 /**
  * Fetch agents for a GitHub user from the DynamoDB state table.
  *
- * Scans for META items whose PK starts with `github:<githubId>#`.
- * Returns an empty array when no agents have been registered yet.
+ * Scans for SESSION items whose PK starts with `github:<githubId>#`
+ * and groups them by agent_id to build the agent list.
+ * No META items are required — agents are derived from actual usage.
  */
 export async function getAgents(githubId: string): Promise<Agent[]> {
   const tenantPrefix = `github:${githubId}#`;
@@ -128,33 +135,56 @@ export async function getAgents(githubId: string): Promise<Agent[]> {
     const result = await ddb.send(
       new ScanCommand({
         TableName: STATE_TABLE,
-        FilterExpression: "begins_with(PK, :tp) AND SK = :meta",
+        FilterExpression: "begins_with(pk, :tp) AND begins_with(sk, :sess)",
         ExpressionAttributeValues: {
           ":tp": { S: tenantPrefix },
-          ":meta": { S: "META" },
+          ":sess": { S: "SESSION#" },
         },
-        Limit: 100,
+        Limit: 1000,
       })
     );
 
     if (!result.Items?.length) return [];
 
-    return result.Items.map((item) => {
-      const pk = item.PK?.S ?? "";
-      const agentId = pk.slice(tenantPrefix.length);
+    // Group sessions by agent_id (derived from PK)
+    const agentMap = new Map<
+      string,
+      { sessions: number; lastActive: string; createdAt: string }
+    >();
 
-      return {
-        id: agentId,
-        name: item.display_name?.S ?? item.name?.S ?? agentId,
-        stateSessions: Number(item.state_sessions?.N ?? "0"),
-        semanticCount: Number(item.semantic_count?.N ?? "0"),
-        episodeCount: Number(item.episode_count?.N ?? "0"),
-        lastActive:
-          item.updated_at?.S ?? item.created_at?.S ?? new Date().toISOString(),
-        createdAt: item.created_at?.S ?? new Date().toISOString(),
-        framework: item.framework?.S ?? "Unknown",
-      };
-    });
+    for (const item of result.Items) {
+      const pk = item.pk?.S ?? "";
+      const agentId = pk.slice(tenantPrefix.length);
+      if (!agentId) continue;
+
+      const updatedAt =
+        item.updated_at?.S ?? item.created_at?.S ?? new Date().toISOString();
+      const createdAt = item.created_at?.S ?? new Date().toISOString();
+
+      const existing = agentMap.get(agentId);
+      if (existing) {
+        existing.sessions += 1;
+        if (updatedAt > existing.lastActive) existing.lastActive = updatedAt;
+        if (createdAt < existing.createdAt) existing.createdAt = createdAt;
+      } else {
+        agentMap.set(agentId, {
+          sessions: 1,
+          lastActive: updatedAt,
+          createdAt,
+        });
+      }
+    }
+
+    return Array.from(agentMap.entries()).map(([agentId, data]) => ({
+      id: agentId,
+      name: agentId,
+      stateSessions: data.sessions,
+      semanticCount: 0,
+      episodeCount: 0,
+      lastActive: data.lastActive,
+      createdAt: data.createdAt,
+      framework: "Unknown",
+    }));
   } catch (error) {
     console.error("[mnemora-api] Failed to fetch agents:", error);
     return [];
@@ -181,7 +211,7 @@ export async function getUsageStats(githubId: string): Promise<UsageStat> {
     const result = await ddb.send(
       new ScanCommand({
         TableName: STATE_TABLE,
-        FilterExpression: "begins_with(PK, :tp) AND begins_with(SK, :sess)",
+        FilterExpression: "begins_with(pk, :tp) AND begins_with(sk, :sess)",
         ExpressionAttributeValues: {
           ":tp": { S: tenantPrefix },
           ":sess": { S: "SESSION#" },
@@ -203,4 +233,50 @@ export async function getUsageStats(githubId: string): Promise<UsageStat> {
     activeAgents: agents.length,
     totalSessions,
   };
+}
+
+// ── Vector Count ─────────────────────────────────────────────────────
+
+/**
+ * Fetch vector count for a tenant by invoking the semantic Lambda directly.
+ *
+ * The dashboard cannot reach Aurora (private VPC), so we invoke the
+ * semantic Lambda with a synthetic API Gateway event containing the
+ * tenant_id in the authorizer context — the same path the real API
+ * Gateway + Lambda authorizer would take.
+ */
+export async function getVectorCount(githubId: string): Promise<number> {
+  const tenantId = `github:${githubId}`;
+
+  try {
+    const result = await lambdaClient.send(
+      new InvokeCommand({
+        FunctionName: SEMANTIC_FUNCTION,
+        InvocationType: "RequestResponse",
+        Payload: Buffer.from(
+          JSON.stringify({
+            requestContext: {
+              http: { method: "GET", path: "/v1/usage/vectors" },
+              requestId: `dashboard-vectors-${Date.now()}`,
+              authorizer: { lambda: { tenantId } },
+            },
+            rawPath: "/v1/usage/vectors",
+            headers: {},
+          })
+        ),
+      })
+    );
+
+    if (result.Payload) {
+      const response = JSON.parse(Buffer.from(result.Payload).toString());
+      if (response.statusCode === 200) {
+        const body = JSON.parse(response.body);
+        return Number(body.data?.vector_count ?? 0);
+      }
+    }
+  } catch (error) {
+    console.error("[mnemora-api] Failed to fetch vector count:", error);
+  }
+
+  return 0;
 }

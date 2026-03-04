@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { getUsageStats } from "@/lib/mnemora-api";
+import { getUsageStats, getVectorCount } from "@/lib/mnemora-api";
 import { StatCard } from "@/components/stat-card";
 import { ArrowRight } from "lucide-react";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
@@ -119,11 +119,16 @@ export default async function UsagePage() {
     // Fallback to free / zeros
   }
 
-  // Fetch storage metrics
+  // Fetch storage metrics + vector count in parallel
   let storageUsedMB = 0;
+  let vectorCount = 0;
   try {
-    const storage = await getStorageMetrics();
+    const [storage, vectors] = await Promise.all([
+      getStorageMetrics(),
+      getVectorCount(githubId),
+    ]);
     storageUsedMB = storage.storageUsedMB;
+    vectorCount = vectors;
   } catch {
     // Fallback to 0
   }
@@ -229,7 +234,7 @@ export default async function UsagePage() {
           />
           <UsageMeter
             label="Vectors Stored"
-            current={0}
+            current={vectorCount}
             limit={tierNumeric.vectors}
           />
           <UsageMeter
