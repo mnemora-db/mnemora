@@ -15,8 +15,8 @@ const post1: BlogPost = {
   title: "How to Give Your AI Agent Persistent Memory in 5 Minutes",
   excerpt:
     "AI agents forget everything between invocations. Here's how to add persistent memory to any Python agent in under 5 minutes with 4 types of memory.",
-  date: "2025-03-03",
-  author: "Isaac Benitez Candia",
+  date: "2026-03-04",
+  author: "Isaac Gutiérrez Brugada",
   readingTime: "6 min",
   tags: ["tutorial", "python", "getting-started"],
   keywords: [
@@ -200,8 +200,8 @@ const post2: BlogPost = {
   title: "Mnemora vs Mem0 vs Zep vs Letta: AI Agent Memory Compared (2025)",
   excerpt:
     "An honest comparison of the four leading AI agent memory solutions — architecture, pricing, performance, and when to use each.",
-  date: "2025-02-28",
-  author: "Isaac Benitez Candia",
+  date: "2026-03-03",
+  author: "Isaac Gutiérrez Brugada",
   readingTime: "8 min",
   tags: ["comparison", "architecture"],
   keywords: [
@@ -351,8 +351,8 @@ const post3: BlogPost = {
   title: "Why Your AI Agent Forgets Everything (And How to Fix It)",
   excerpt:
     "Your agent processes a 50-step research task, delivers results, then forgets everything. Here's why — and the architecture that fixes it.",
-  date: "2025-02-25",
-  author: "Isaac Benitez Candia",
+  date: "2026-03-02",
+  author: "Isaac Gutiérrez Brugada",
   readingTime: "5 min",
   tags: ["architecture", "concepts"],
   keywords: [
@@ -484,8 +484,8 @@ const post4: BlogPost = {
   title: "Building a LangGraph Agent with Persistent Memory",
   excerpt:
     "Add persistent memory to your LangGraph agent with a single line change — drop in MnemoraCheckpointSaver and your agent remembers across sessions.",
-  date: "2025-02-20",
-  author: "Isaac Benitez Candia",
+  date: "2026-02-28",
+  author: "Isaac Gutiérrez Brugada",
   readingTime: "7 min",
   tags: ["tutorial", "langgraph", "integration"],
   keywords: [
@@ -683,8 +683,8 @@ const post5: BlogPost = {
   title: "Designing a Serverless Memory Architecture for AI Agents",
   excerpt:
     "How we built a memory database that costs ~$1/month at idle and scales to millions of operations — without putting an LLM in every read path.",
-  date: "2025-02-15",
-  author: "Isaac Benitez Candia",
+  date: "2026-02-25",
+  author: "Isaac Gutiérrez Brugada",
   readingTime: "7 min",
   tags: ["architecture", "aws", "deep-dive"],
   keywords: [
@@ -826,8 +826,8 @@ const post6: BlogPost = {
   title: "Multi-Tenant Agent Memory: Building AI Features for SaaS",
   excerpt:
     "When you add AI agents to your SaaS product, every customer's data must stay isolated. Here's the memory architecture that makes it safe and simple.",
-  date: "2025-02-10",
-  author: "Isaac Benitez Candia",
+  date: "2026-02-20",
+  author: "Isaac Gutiérrez Brugada",
   readingTime: "5 min",
   tags: ["saas", "multi-tenant", "architecture"],
   keywords: [

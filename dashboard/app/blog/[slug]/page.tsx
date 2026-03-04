@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Linkedin } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getPost, getAllPosts } from "@/lib/blog";
 import { MarkdownRenderer } from "@/components/docs/markdown-renderer";
@@ -170,7 +170,18 @@ export default async function BlogPostPage({
             {post.title}
           </h1>
           <div className="flex items-center gap-3 text-sm text-[#71717A]">
-            <span>{post.author}</span>
+            <span className="flex items-center gap-1.5">
+              {post.author}
+              <a
+                href="https://www.linkedin.com/in/isaacgbc/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#52525B] hover:text-[#0A66C2] transition-colors"
+                aria-label="LinkedIn profile"
+              >
+                <Linkedin className="w-3.5 h-3.5" />
+              </a>
+            </span>
             <span className="text-[#3F3F46]">·</span>
             <time dateTime={post.date}>{formatDate(post.date)}</time>
             <span className="text-[#3F3F46]">·</span>
