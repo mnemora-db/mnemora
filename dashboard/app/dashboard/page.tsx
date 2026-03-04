@@ -7,6 +7,16 @@ import { CheckCircle2, AlertTriangle, Terminal } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { getHealth, getUsageStats, type HealthStatus } from "@/lib/mnemora-api";
+import { CodeBlock } from "@/components/code-block";
+
+const QUICKSTART_CODE = `pip install mnemora
+
+from mnemora import MnemoraSync
+
+client = MnemoraSync(api_key="mnm_...")
+client.store_state("my-agent", {"task": "hello world"})
+client.store_memory("my-agent", "User prefers concise replies.")
+`;
 
 function overallBadge(health: HealthStatus) {
   if (health.ok) {
@@ -214,16 +224,9 @@ export default async function DashboardPage() {
                   Install the SDK and start storing agent memory in under 5
                   minutes. Generate an API key above, then:
                 </p>
-                <pre className="mt-3 px-4 py-3 bg-[#111114] border border-[#27272A] rounded-md text-xs font-mono text-[#A1A1AA] overflow-x-auto">
-                  <code>{`pip install mnemora
-
-from mnemora import MnemoraSync
-
-client = MnemoraSync(api_key="mnm_...")
-client.store_state("my-agent", {"task": "hello world"})
-client.store_memory("my-agent", "User prefers concise replies.")
-`}</code>
-                </pre>
+                <div className="mt-3">
+                  <CodeBlock code={QUICKSTART_CODE} />
+                </div>
               </div>
             </div>
           </div>

@@ -4,6 +4,15 @@ import { AgentCard } from "@/components/agent-card";
 import { getAgents } from "@/lib/mnemora-api";
 import { Bot, Terminal } from "lucide-react";
 import Link from "next/link";
+import { CodeBlock } from "@/components/code-block";
+
+const QUICKSTART_CODE = `pip install mnemora
+
+from mnemora import MnemoraSync
+client = MnemoraSync(api_key="mnm_...")
+client.store_state("my-agent", {"task": "research"})
+client.store_memory("my-agent", "Key finding from research.")
+`;
 
 export default async function AgentsPage() {
   const session = await getServerSession(authOptions);
@@ -61,15 +70,9 @@ export default async function AgentsPage() {
                 Get API Key
               </Link>
             </div>
-            <pre className="mt-5 px-4 py-3 bg-[#111114] border border-[#27272A] rounded-md text-xs font-mono text-[#A1A1AA] text-left max-w-md overflow-x-auto w-full">
-              <code>{`pip install mnemora
-
-from mnemora import MnemoraSync
-client = MnemoraSync(api_key="mnm_...")
-client.store_state("my-agent", {"task": "research"})
-client.store_memory("my-agent", "Key finding from research.")
-`}</code>
-            </pre>
+            <div className="mt-5 max-w-md w-full text-left">
+              <CodeBlock code={QUICKSTART_CODE} />
+            </div>
           </div>
         </section>
       )}
