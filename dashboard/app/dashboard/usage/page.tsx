@@ -2,45 +2,141 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { getUsageStats } from "@/lib/mnemora-api";
 import { StatCard } from "@/components/stat-card";
-import { BarChart3, ArrowRight } from "lucide-react";
-import {
-  mockCostEstimates,
-} from "@/lib/mock-data";
+import { ArrowRight } from "lucide-react";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
-import { TIER_LIMITS, TIER_BADGE_COLORS } from "@/lib/tiers";
+import { TIER_LIMITS, TIER_BADGE_COLORS, TIER_NUMERIC } from "@/lib/tiers";
+import { getStorageMetrics } from "@/lib/cloudwatch";
 import Link from "next/link";
 
 const USERS_TABLE = process.env.USERS_TABLE_NAME ?? "mnemora-users-dev";
 const usageDdb = new DynamoDBClient({ region: process.env.AWS_REGION ?? "us-east-1" });
 const usageDocClient = DynamoDBDocumentClient.from(usageDdb);
 
-function totalCost(costs: { cost: number }[]): number {
-  return costs.reduce((sum, c) => sum + c.cost, 0);
+// ── Progress bar component ──────────────────────────────────────────
+
+function UsageMeter({
+  label,
+  current,
+  limit,
+  unit,
+}: {
+  label: string;
+  current: number;
+  limit: number;
+  unit?: string;
+}) {
+  const isUnlimited = !isFinite(limit);
+  const pct = isUnlimited ? 0 : limit > 0 ? Math.min((current / limit) * 100, 100) : 0;
+
+  // Color thresholds: green <70%, amber 70-90%, red ≥90%
+  let barColor = "bg-[#2DD4BF]"; // teal
+  let textColor = "text-[#2DD4BF]";
+  if (!isUnlimited && pct >= 90) {
+    barColor = "bg-red-500";
+    textColor = "text-red-500";
+  } else if (!isUnlimited && pct >= 70) {
+    barColor = "bg-amber-500";
+    textColor = "text-amber-500";
+  }
+
+  const formatNum = (n: number) => {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}K`;
+    return n.toLocaleString();
+  };
+
+  const currentStr = unit ? `${current} ${unit}` : formatNum(current);
+  const limitStr = isUnlimited
+    ? "Unlimited"
+    : unit
+      ? `${formatNum(limit)} ${unit}`
+      : formatNum(limit);
+
+  return (
+    <div className="rounded-md border border-[#27272A] bg-[#18181B] px-5 py-4">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs font-medium text-[#71717A] uppercase tracking-wide">
+          {label}
+        </span>
+        <span className={`text-xs font-mono ${textColor}`}>
+          {currentStr} / {limitStr}
+        </span>
+      </div>
+      <div className="h-2 rounded-full bg-[#27272A] overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+          style={{ width: `${isUnlimited ? 0 : pct}%` }}
+        />
+      </div>
+      {!isUnlimited && pct > 0 && (
+        <p className="mt-1.5 text-[10px] text-[#52525B] text-right">
+          {Math.round(pct)}% used
+        </p>
+      )}
+    </div>
+  );
 }
+
+// ── Page ─────────────────────────────────────────────────────────────
 
 export default async function UsagePage() {
   const session = await getServerSession(authOptions);
   const githubId = session?.user?.id ?? "";
   const stats = await getUsageStats(githubId);
-  const total = totalCost(mockCostEstimates);
 
-  // Fetch user tier from DynamoDB
+  // Fetch user record (tier + per-tenant API call counters)
   let userTier = "free";
+  let apiCallsToday = 0;
+  let apiCallsMonth = 0;
   try {
     const userResult = await usageDocClient.send(
       new GetCommand({
         TableName: USERS_TABLE,
         Key: { github_id: githubId },
-        ProjectionExpression: "tier",
+        ProjectionExpression:
+          "tier, api_calls_today, api_calls_month, last_call_date, last_call_month",
       })
     );
-    userTier = String(userResult.Item?.tier ?? "free");
+    const item = userResult.Item ?? {};
+    userTier = String(item.tier ?? "free");
+
+    // Read counters — reset if stale
+    const now = new Date();
+    const today = now.toISOString().slice(0, 10);
+    const month = now.toISOString().slice(0, 7);
+
+    apiCallsToday = Number(item.api_calls_today ?? 0);
+    apiCallsMonth = Number(item.api_calls_month ?? 0);
+
+    if (item.last_call_date && item.last_call_date !== today) {
+      apiCallsToday = 0;
+    }
+    if (item.last_call_month && item.last_call_month !== month) {
+      apiCallsMonth = 0;
+    }
   } catch {
-    // Fallback to free
+    // Fallback to free / zeros
   }
+
+  // Fetch storage metrics
+  let storageUsedMB = 0;
+  try {
+    const storage = await getStorageMetrics();
+    storageUsedMB = storage.storageUsedMB;
+  } catch {
+    // Fallback to 0
+  }
+
   const tierInfo = TIER_LIMITS[userTier] ?? TIER_LIMITS.free;
+  const tierNumeric = TIER_NUMERIC[userTier] ?? TIER_NUMERIC.free;
   const badgeColor = TIER_BADGE_COLORS[userTier] ?? TIER_BADGE_COLORS.free;
+
+  // Billing period label
+  const now = new Date();
+  const monthName = now.toLocaleString("en-US", { month: "long" });
+  const year = now.getFullYear();
+  const daysInMonth = new Date(year, now.getMonth() + 1, 0).getDate();
 
   return (
     <div className="space-y-6">
@@ -50,7 +146,7 @@ export default async function UsagePage() {
           Usage
         </h1>
         <p className="mt-0.5 text-sm text-[#71717A]">
-          Current billing period: March 1–31, 2026.
+          Current billing period: {monthName} 1&ndash;{daysInMonth}, {year}.
         </p>
       </div>
 
@@ -67,23 +163,11 @@ export default async function UsagePage() {
           />
           <StatCard
             label="API Calls Today"
-            value={
-              stats.apiCallsToday > 0
-                ? stats.apiCallsToday.toLocaleString()
-                : "—"
-            }
-            subLabel={
-              stats.apiCallsToday === 0 ? "Metrics coming soon" : undefined
-            }
+            value={apiCallsToday > 0 ? apiCallsToday.toLocaleString() : "0"}
           />
           <StatCard
-            label="Storage Used"
-            value={
-              stats.storageGb > 0 ? `${stats.storageGb} GB` : "—"
-            }
-            subLabel={
-              stats.storageGb === 0 ? "Metrics coming soon" : undefined
-            }
+            label="API Calls This Month"
+            value={apiCallsMonth > 0 ? apiCallsMonth.toLocaleString() : "0"}
           />
         </div>
       </section>
@@ -121,98 +205,38 @@ export default async function UsagePage() {
         </div>
       </section>
 
-      {/* Charts placeholder — requires CloudWatch integration */}
-      <section aria-label="API call history">
-        <div className="rounded-md border border-dashed border-[#3F3F46] bg-[#18181B]/50 px-6 py-10 flex flex-col items-center text-center">
-          <div className="w-12 h-12 rounded-lg bg-[#111114] border border-[#27272A] flex items-center justify-center mb-4">
-            <BarChart3
-              className="w-6 h-6 text-[#71717A]"
-              aria-hidden="true"
-            />
-          </div>
-          <h2 className="text-sm font-semibold text-[#FAFAFA]">
-            Usage charts coming soon
+      {/* Usage vs Limits — progress bars */}
+      <section aria-label="Usage vs limits">
+        <div className="space-y-1.5 mb-3">
+          <h2 className="text-sm font-medium text-[#FAFAFA]">
+            Usage vs Limits
           </h2>
-          <p className="mt-1.5 text-sm text-[#71717A] max-w-sm">
-            Detailed API call volume, endpoint distribution, and storage
-            breakdown charts will appear here once the CloudWatch metrics
-            pipeline is connected.
+          <p className="text-xs text-[#71717A]">
+            Real-time usage against your {tierInfo.label} tier limits.
           </p>
         </div>
-      </section>
-
-      {/* Cost estimate — estimated based on AWS pricing */}
-      <section aria-label="Cost estimate">
-        <div className="rounded-md border border-[#27272A] bg-[#18181B]">
-          <div className="px-5 py-4 border-b border-[#27272A]">
-            <h2 className="text-sm font-medium text-[#FAFAFA]">
-              Cost Estimate
-            </h2>
-            <p className="text-xs text-[#71717A] mt-0.5">
-              Estimated based on current usage and AWS pricing.
-            </p>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table
-              className="w-full text-sm"
-              aria-label="Cost estimates by service"
-            >
-              <thead>
-                <tr className="border-b border-[#27272A]">
-                  <th
-                    scope="col"
-                    className="px-5 py-3 text-left text-[10px] font-medium text-[#71717A] uppercase tracking-wide"
-                  >
-                    Service
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-5 py-3 text-left text-[10px] font-medium text-[#71717A] uppercase tracking-wide"
-                  >
-                    Detail
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-5 py-3 text-right text-[10px] font-medium text-[#71717A] uppercase tracking-wide"
-                  >
-                    Estimated Cost
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {mockCostEstimates.map((item) => (
-                  <tr
-                    key={item.service}
-                    className="border-b border-[#27272A] last:border-0"
-                  >
-                    <td className="px-5 py-3 text-[#FAFAFA] font-medium">
-                      {item.service}
-                    </td>
-                    <td className="px-5 py-3 text-[#71717A] text-xs">
-                      {item.detail}
-                    </td>
-                    <td className="px-5 py-3 text-right font-mono text-[#A1A1AA]">
-                      ~${item.cost.toFixed(2)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t border-[#3F3F46]">
-                  <td
-                    colSpan={2}
-                    className="px-5 py-3 text-sm font-semibold text-[#FAFAFA]"
-                  >
-                    Total
-                  </td>
-                  <td className="px-5 py-3 text-right font-mono font-semibold text-[#FAFAFA]">
-                    ~${total.toFixed(2)}/month
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <UsageMeter
+            label="API Calls Today"
+            current={apiCallsToday}
+            limit={tierNumeric.apiCallsPerDay}
+          />
+          <UsageMeter
+            label="Storage Used"
+            current={storageUsedMB}
+            limit={tierNumeric.storageMB}
+            unit="MB"
+          />
+          <UsageMeter
+            label="Vectors Stored"
+            current={0}
+            limit={tierNumeric.vectors}
+          />
+          <UsageMeter
+            label="Active Agents"
+            current={stats.activeAgents}
+            limit={tierNumeric.agents}
+          />
         </div>
       </section>
     </div>

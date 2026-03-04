@@ -139,6 +139,9 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         )
     )
 
+    # Fire-and-forget: increment per-tenant API call counters.
+    _increment_api_calls(tenant_id)
+
     return {
         "isAuthorized": True,
         "context": {
@@ -239,6 +242,93 @@ def _get_dynamo_client() -> Any:
 
         _dynamo_client = boto3.client("dynamodb")
     return _dynamo_client
+
+
+def _increment_api_calls(tenant_id: str) -> None:
+    """Increment per-tenant daily and monthly API call counters.
+
+    Stores counters on the users table keyed by github_id. Automatically
+    resets the daily counter when the date changes and the monthly counter
+    when the month changes.
+
+    This is fire-and-forget: errors are logged but never block auth.
+
+    Args:
+        tenant_id: Tenant identifier (format ``github:<github_id>``).
+    """
+    table_name = os.environ.get("USERS_TABLE_NAME")
+    if not table_name or not tenant_id.startswith("github:"):
+        return
+
+    github_id = tenant_id.removeprefix("github:")
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    month = datetime.now(timezone.utc).strftime("%Y-%m")
+    client = _get_dynamo_client()
+
+    try:
+        # Happy path: same day & month — just increment.
+        client.update_item(
+            TableName=table_name,
+            Key={"github_id": {"S": github_id}},
+            UpdateExpression=(
+                "SET api_calls_today = if_not_exists(api_calls_today, :zero) + :one, "
+                "api_calls_month = if_not_exists(api_calls_month, :zero) + :one, "
+                "last_call_date = :today, "
+                "last_call_month = :month"
+            ),
+            ConditionExpression=(
+                "(attribute_not_exists(last_call_date) OR last_call_date = :today) "
+                "AND (attribute_not_exists(last_call_month) OR last_call_month = :month)"
+            ),
+            ExpressionAttributeValues={
+                ":zero": {"N": "0"},
+                ":one": {"N": "1"},
+                ":today": {"S": today},
+                ":month": {"S": month},
+            },
+        )
+    except Exception as exc:
+        if "ConditionalCheckFailedException" in type(exc).__name__:
+            # Day or month rolled over — determine what to reset.
+            try:
+                resp = client.get_item(
+                    TableName=table_name,
+                    Key={"github_id": {"S": github_id}},
+                    ProjectionExpression="last_call_month",
+                )
+                stored_month = (
+                    resp.get("Item", {}).get("last_call_month", {}).get("S", "")
+                )
+
+                if stored_month != month:
+                    # Month changed — reset both counters.
+                    expr = (
+                        "SET api_calls_today = :one, api_calls_month = :one, "
+                        "last_call_date = :today, last_call_month = :month"
+                    )
+                else:
+                    # Only day changed — reset daily, increment monthly.
+                    expr = (
+                        "SET api_calls_today = :one, "
+                        "api_calls_month = if_not_exists(api_calls_month, :zero) + :one, "
+                        "last_call_date = :today, last_call_month = :month"
+                    )
+
+                client.update_item(
+                    TableName=table_name,
+                    Key={"github_id": {"S": github_id}},
+                    UpdateExpression=expr,
+                    ExpressionAttributeValues={
+                        ":zero": {"N": "0"},
+                        ":one": {"N": "1"},
+                        ":today": {"S": today},
+                        ":month": {"S": month},
+                    },
+                )
+            except Exception:
+                logger.warning("Failed to reset API call counters", exc_info=True)
+        else:
+            logger.warning("Failed to increment API call counters", exc_info=True)
 
 
 def _deny_response() -> dict[str, Any]:

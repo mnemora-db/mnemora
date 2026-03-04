@@ -534,6 +534,13 @@ export class MnemoraStack extends cdk.Stack {
       integration: unifiedIntegration,
     });
 
+    // Vector count (served by semantic function — needs Aurora access)
+    this.httpApi.addRoutes({
+      path: '/v1/usage/vectors',
+      methods: [HttpMethod.GET],
+      integration: semanticIntegration,
+    });
+
     // -------------------------------------------------------
     // Observability — SNS, CloudWatch Dashboard, Alarms
     // All Lambda functions are referenced by local variable here.

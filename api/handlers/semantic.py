@@ -87,6 +87,10 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     )
 
     try:
+        # Vector count endpoint: GET /v1/usage/vectors
+        if method == "GET" and path.rstrip("/") == "/v1/usage/vectors":
+            return _handle_vector_count(tenant_id, request_id, start_time)
+
         # Segments after stripping /v1/memory/semantic prefix.
         # Full path: /v1/memory/semantic[/search|/<id>]
         full_segments = [s for s in path.strip("/").split("/") if s]
@@ -615,6 +619,58 @@ def _handle_get(
 
     return success_response(
         body=_row_to_response(dict(row)),
+        request_id=request_id,
+        start_time=start_time,
+    )
+
+
+def _handle_vector_count(
+    tenant_id: str,
+    request_id: str,
+    start_time: float,
+) -> dict[str, Any]:
+    """GET /v1/usage/vectors — count stored vectors for the tenant.
+
+    Args:
+        tenant_id: Tenant identifier from the Lambda authorizer.
+        request_id: Unique request identifier for tracing.
+        start_time: Unix timestamp of request arrival.
+
+    Returns:
+        200 with ``{"vector_count": N}``.
+    """
+    from lib.aurora import get_connection, set_tenant_context
+
+    with get_connection() as conn:
+        set_tenant_context(conn, tenant_id)
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT COUNT(*) AS count
+                FROM semantic_memory
+                WHERE tenant_id = %s
+                  AND NOT is_deleted
+                """,
+                (tenant_id,),
+            )
+            row = cur.fetchone()
+
+    count = int(row["count"]) if row else 0
+
+    logger.info(
+        json.dumps(
+            {
+                "request_id": request_id,
+                "tenant_id": tenant_id,
+                "action": "vector_count",
+                "count": count,
+                "latency_ms": round((time.time() - start_time) * 1000),
+            }
+        )
+    )
+
+    return success_response(
+        body={"vector_count": count},
         request_id=request_id,
         start_time=start_time,
     )

@@ -74,6 +74,22 @@ export const CREALA_LINKS: Record<string, string> = {
   scale: "https://pay.crea.la/b/4gMdR8fyvgFEcxW4741VN3V",
 };
 
+/** Numeric limits for progress bar calculations. */
+export interface TierNumericLimits {
+  apiCallsPerDay: number;
+  storageMB: number;
+  vectors: number;
+  agents: number;
+}
+
+export const TIER_NUMERIC: Record<string, TierNumericLimits> = {
+  free: { apiCallsPerDay: 500, storageMB: 50, vectors: 5_000, agents: 1 },
+  starter: { apiCallsPerDay: 5_000, storageMB: 500, vectors: 50_000, agents: 10 },
+  pro: { apiCallsPerDay: 25_000, storageMB: 5_120, vectors: 250_000, agents: 50 },
+  scale: { apiCallsPerDay: 50_000, storageMB: 10_240, vectors: 500_000, agents: Infinity },
+  enterprise: { apiCallsPerDay: Infinity, storageMB: Infinity, vectors: Infinity, agents: Infinity },
+};
+
 /** Badge color classes for each tier. */
 export const TIER_BADGE_COLORS: Record<string, string> = {
   free: "bg-[#27272A]/50 text-[#A1A1AA] border-[#3F3F46]",
