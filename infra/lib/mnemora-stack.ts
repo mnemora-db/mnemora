@@ -389,7 +389,7 @@ export class MnemoraStack extends cdk.Stack {
     // IAM grants — least privilege per function
     // -------------------------------------------------------
     this.stateTable.grantReadData(authFn);
-    this.usersTable.grantReadData(authFn);
+    this.usersTable.grantReadWriteData(authFn);
 
     this.stateTable.grantReadWriteData(stateFn);
 
