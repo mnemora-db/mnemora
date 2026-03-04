@@ -11,7 +11,6 @@ import {
   CreditCard,
   Settings,
   User,
-  MessageSquare,
   ShieldCheck,
   Menu,
   X,
@@ -149,27 +148,6 @@ export function Sidebar() {
         })}
 
         {/* Admin-only nav items */}
-        {isAdmin && (
-          <Link
-            href="/dashboard/feedback"
-            aria-current={isActive("/dashboard/feedback") ? "page" : undefined}
-            className={cn(
-              "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors duration-150",
-              isActive("/dashboard/feedback")
-                ? "bg-[rgba(45,212,191,0.08)] text-teal-400"
-                : "text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#18181B]"
-            )}
-          >
-            <MessageSquare
-              className={cn(
-                "w-4 h-4 shrink-0",
-                isActive("/dashboard/feedback") ? "text-teal-400" : "text-[#71717A]"
-              )}
-              aria-hidden="true"
-            />
-            <span>Feedback</span>
-          </Link>
-        )}
         {isAdmin && (
           <Link
             href="/dashboard/admin"
