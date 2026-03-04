@@ -12,6 +12,7 @@
     "@aws-sdk/client-cloudwatch": "^3.1001.0",
     "@aws-sdk/client-dynamodb": "^3.1000.0",
     "@aws-sdk/client-lambda": "^3.1001.0",
+    "@aws-sdk/client-rds": "^3.1002.0",
     "@aws-sdk/lib-dynamodb": "^3.1000.0",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",

@@ -644,15 +644,25 @@ def _handle_vector_count(
     with get_connection() as conn:
         set_tenant_context(conn, tenant_id)
         with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT COUNT(*) AS count
-                FROM semantic_memory
-                WHERE tenant_id = %s
-                  AND NOT is_deleted
-                """,
-                (tenant_id,),
-            )
+            if tenant_id == "__admin_global__":
+                # Admin mode: count ALL vectors across all tenants.
+                # Only reachable via direct Lambda invocation, never
+                # through API Gateway (which derives tenant_id from
+                # the authenticated API key).
+                cur.execute(
+                    "SELECT COUNT(*) AS count FROM semantic_memory"
+                    " WHERE NOT is_deleted"
+                )
+            else:
+                cur.execute(
+                    """
+                    SELECT COUNT(*) AS count
+                    FROM semantic_memory
+                    WHERE tenant_id = %s
+                      AND NOT is_deleted
+                    """,
+                    (tenant_id,),
+                )
             row = cur.fetchone()
 
     count = int(row["count"]) if row else 0

@@ -12,9 +12,11 @@ import {
   Settings,
   User,
   MessageSquare,
+  ShieldCheck,
   Menu,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -168,6 +170,27 @@ export function Sidebar() {
             <span>Feedback</span>
           </Link>
         )}
+        {isAdmin && (
+          <Link
+            href="/dashboard/admin"
+            aria-current={isActive("/dashboard/admin") ? "page" : undefined}
+            className={cn(
+              "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors duration-150",
+              isActive("/dashboard/admin")
+                ? "bg-[rgba(45,212,191,0.08)] text-teal-400"
+                : "text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#18181B]"
+            )}
+          >
+            <ShieldCheck
+              className={cn(
+                "w-4 h-4 shrink-0",
+                isActive("/dashboard/admin") ? "text-teal-400" : "text-[#71717A]"
+              )}
+              aria-hidden="true"
+            />
+            <span>Admin</span>
+          </Link>
+        )}
       </nav>
 
       {/* Bottom: user + settings */}
@@ -180,12 +203,22 @@ export function Sidebar() {
           <span>Settings</span>
         </Link>
         <div className="flex items-center gap-3 px-3 py-2 rounded-md">
-          <div
-            className="w-6 h-6 rounded-full bg-[#27272A] border border-[#3F3F46] flex items-center justify-center shrink-0"
-            aria-hidden="true"
-          >
-            <User className="w-3.5 h-3.5 text-[#71717A]" />
-          </div>
+          {session?.user?.image ? (
+            <Image
+              src={session.user.image}
+              alt={session.user.name ?? "User"}
+              width={24}
+              height={24}
+              className="rounded-full border border-[#3F3F46] shrink-0"
+            />
+          ) : (
+            <div
+              className="w-6 h-6 rounded-full bg-[#27272A] border border-[#3F3F46] flex items-center justify-center shrink-0"
+              aria-hidden="true"
+            >
+              <User className="w-3.5 h-3.5 text-[#71717A]" />
+            </div>
+          )}
           <div className="min-w-0">
             <p className="text-xs font-medium text-[#FAFAFA] truncate">
               {session?.user?.email ?? ""}
