@@ -18,7 +18,6 @@ import {
   Users,
   Activity,
   BookOpen,
-  ExternalLink,
   Menu,
   MessageSquare,
   Search,
@@ -319,25 +318,31 @@ const PRICING_TIERS = [
 
 const BLOG_POSTS = [
   {
-    title: "Understanding Agent Memory: A Developer's Guide",
+    slug: "how-to-give-your-ai-agent-persistent-memory",
+    title: "How to Give Your AI Agent Persistent Memory in 5 Minutes",
     description:
-      "A deep dive into the four types of memory AI agents need and why each matters for building production-grade systems.",
-    tag: "Guide",
-    readTime: "8 min",
-  },
-  {
-    title: "Building Persistent AI Agents with LangGraph and Mnemora",
-    description:
-      "Step-by-step tutorial: how to use MnemoraCheckpointSaver to give your LangGraph agents durable, cross-session memory.",
+      "AI agents forget everything between invocations. Here's how to add persistent memory to any Python agent in under 5 minutes with 4 types of memory.",
     tag: "Tutorial",
-    readTime: "12 min",
+    readTime: "6 min",
+    date: "2025-03-03",
   },
   {
-    title: "Why Serverless Memory Matters for AI at Scale",
+    slug: "mnemora-vs-mem0-vs-zep-vs-letta",
+    title: "Mnemora vs Mem0 vs Zep vs Letta: AI Agent Memory Compared",
     description:
-      "The economics of serverless infrastructure for AI workloads — and why stateless-by-default is the wrong architecture choice.",
-    tag: "Architecture",
-    readTime: "6 min",
+      "An honest comparison of four AI agent memory platforms — architecture, features, pricing, and when to use each.",
+    tag: "Comparison",
+    readTime: "8 min",
+    date: "2025-02-28",
+  },
+  {
+    slug: "why-your-ai-agent-forgets-everything",
+    title: "Why Your AI Agent Forgets Everything (And How to Fix It)",
+    description:
+      "The goldfish problem: agents are stateless by default. Here's the mental model for the four types of memory every production agent needs.",
+    tag: "Concepts",
+    readTime: "5 min",
+    date: "2025-02-25",
   },
 ];
 
@@ -369,7 +374,7 @@ function Navbar() {
     { href: "#features", label: "Features" },
     { href: "#compare", label: "Compare" },
     { href: "#pricing", label: "Pricing" },
-    { href: "#blog", label: "Blog" },
+    { href: "/blog", label: "Blog" },
     { href: "#faq", label: "FAQ" },
   ];
 
@@ -767,16 +772,40 @@ function SolutionSection() {
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">
-          {types.map(({ icon: Icon, name, badge, badgeColor, desc, soon }) => (
-            <div
-              key={name}
-              className={`group relative rounded-xl p-px transition-all duration-300 ${
-                soon
-                  ? "bg-[#27272A]/50 opacity-60"
-                  : "bg-gradient-to-b from-[#2DD4BF]/10 via-[#27272A] to-[#A78BFA]/10 hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(45,212,191,0.08)]"
-              }`}
-            >
-              <div className={`rounded-[11px] p-6 h-full ${soon ? "bg-[#111114]" : "bg-[#111114]/80 backdrop-blur-sm"}`}>
+          {types.map(({ icon: Icon, name, badge, badgeColor, desc, soon }) =>
+            soon ? (
+              <div
+                key={name}
+                className="group relative rounded-xl p-px bg-[#27272A]/50 opacity-60 transition-all duration-300"
+              >
+                <div className="rounded-[11px] p-6 h-full bg-[#111114]">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-9 h-9 rounded-lg bg-[#18181B] border border-[#27272A] flex items-center justify-center">
+                      <Icon className="w-4 h-4" style={{ color: badgeColor }} />
+                    </div>
+                    <span
+                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
+                      style={{
+                        color: badgeColor,
+                        borderColor: `${badgeColor}40`,
+                        backgroundColor: `${badgeColor}12`,
+                      }}
+                    >
+                      {badge}
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-semibold text-[#FAFAFA] mb-2">
+                    {name}
+                  </h3>
+                  <p className="text-xs text-[#71717A] leading-relaxed">{desc}</p>
+                </div>
+              </div>
+            ) : (
+              <GlowCard
+                key={name}
+                className="hover:-translate-y-0.5"
+                innerClassName="p-6"
+              >
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-9 h-9 rounded-lg bg-[#18181B] border border-[#27272A] flex items-center justify-center">
                     <Icon className="w-4 h-4" style={{ color: badgeColor }} />
@@ -796,9 +825,9 @@ function SolutionSection() {
                   {name}
                 </h3>
                 <p className="text-xs text-[#71717A] leading-relaxed">{desc}</p>
-              </div>
-            </div>
-          ))}
+              </GlowCard>
+            )
+          )}
         </div>
       </div>
     </section>
@@ -1280,39 +1309,45 @@ function BlogSection() {
               From the team
             </h2>
           </div>
-          <a
-            href="#"
+          <Link
+            href="/blog"
             className="text-xs text-[#2DD4BF] hover:underline flex items-center gap-1"
           >
-            All posts <ExternalLink className="w-3 h-3" />
-          </a>
+            View all posts <ArrowRight className="w-3 h-3" />
+          </Link>
         </div>
 
         <div className="grid sm:grid-cols-3 gap-4">
           {BLOG_POSTS.map((post) => (
-            <article
-              key={post.title}
-              className="rounded-xl border border-[#27272A] bg-[#111114] p-5 flex flex-col gap-3 hover:border-[#3F3F46] transition-colors duration-200"
+            <Link
+              key={post.slug}
+              href={`/blog/${post.slug}`}
+              className="group block"
             >
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-[#2DD4BF]/30 bg-[#2DD4BF]/[0.08] text-[#2DD4BF]">
-                  {post.tag}
-                </span>
-                <span className="text-[10px] text-[#52525B]">
-                  {post.readTime} read
-                </span>
-              </div>
-              <h3 className="text-sm font-semibold text-[#FAFAFA] leading-snug">
-                {post.title}
-              </h3>
-              <p className="text-xs text-[#71717A] leading-relaxed flex-1">
-                {post.description}
-              </p>
-              <div className="flex items-center gap-1.5 text-[10px] text-[#3F3F46]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#27272A]" />
-                Coming soon
-              </div>
-            </article>
+              <article className="rounded-xl border border-[#27272A] bg-[#111114] p-5 flex flex-col gap-3 hover:border-[#3F3F46] transition-colors duration-200 h-full">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-[#2DD4BF]/30 bg-[#2DD4BF]/[0.08] text-[#2DD4BF]">
+                    {post.tag}
+                  </span>
+                  <span className="text-[10px] text-[#52525B]">
+                    {post.readTime} read
+                  </span>
+                </div>
+                <h3 className="text-sm font-semibold text-[#FAFAFA] leading-snug group-hover:text-[#2DD4BF] transition-colors">
+                  {post.title}
+                </h3>
+                <p className="text-xs text-[#71717A] leading-relaxed flex-1">
+                  {post.description}
+                </p>
+                <div className="flex items-center gap-1.5 text-[10px] text-[#52525B]">
+                  <span>{post.date}</span>
+                  <span className="text-[#3F3F46]">·</span>
+                  <span className="text-[#2DD4BF] group-hover:underline">
+                    Read more →
+                  </span>
+                </div>
+              </article>
+            </Link>
           ))}
         </div>
       </div>
