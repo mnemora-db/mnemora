@@ -89,6 +89,54 @@ html {
   animation: shimmer 4s linear infinite;
 }
 
+/* ─── Animated grid pattern ─────────────────────────────────────────────── */
+
+@keyframes gridFade {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 0.06; }
+}
+
+.animated-grid-cell {
+  opacity: 0;
+  animation: gridFade 4s ease-in-out infinite;
+}
+
+/* ─── Glow card (mouse-following border) ───────────────────────────────── */
+
+.glow-card {
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+  position: relative;
+  border-radius: 0.75rem;
+  padding: 1px;
+  background: linear-gradient(to bottom, rgba(45,212,191,0.10), #27272A, rgba(167,139,250,0.10));
+}
+
+.glow-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s;
+  background: radial-gradient(
+    400px circle at var(--mouse-x) var(--mouse-y),
+    rgba(45,212,191,0.15),
+    transparent 60%
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+
+.glow-card:hover::before {
+  opacity: 1;
+}
+
+.glow-card > div {
+  position: relative;
+  z-index: 2;
+}
+
 /* ─── Docs prose styling ─────────────────────────────────────────────────── */
 
 .prose-mnemora {

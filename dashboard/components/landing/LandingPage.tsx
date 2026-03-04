@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useRef, type MouseEvent as ReactMouseEvent } from "react";
 import Link from "next/link";
 import {
   Github,
@@ -46,6 +46,87 @@ function MnemoraLogo({ size = 20 }: { size?: number }) {
         strokeLinejoin="round"
       />
     </svg>
+  );
+}
+
+// ─── Animated grid pattern ───────────────────────────────────────────────────
+function AnimatedGrid() {
+  const cols = 12;
+  const rows = 8;
+  const size = 60;
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      <svg
+        className="w-full h-full"
+        xmlns="http://www.w3.org/2000/svg"
+        style={{ minWidth: cols * size, minHeight: rows * size }}
+      >
+        {Array.from({ length: cols * rows }, (_, i) => {
+          const col = i % cols;
+          const row = Math.floor(i / cols);
+          const delay = ((col * 0.7 + row * 1.3 + Math.sin(i) * 2) % 6).toFixed(2);
+          return (
+            <rect
+              key={i}
+              x={col * size}
+              y={row * size}
+              width={size}
+              height={size}
+              fill="none"
+              stroke="#2DD4BF"
+              strokeWidth="0.5"
+              className="animated-grid-cell"
+              style={{ animationDelay: `${delay}s` }}
+            />
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+// ─── Dot grid background ─────────────────────────────────────────────────────
+function DotGrid() {
+  return (
+    <div
+      className="absolute inset-0 pointer-events-none"
+      style={{
+        backgroundImage:
+          "radial-gradient(circle, rgba(250,250,250,0.04) 1px, transparent 1px)",
+        backgroundSize: "24px 24px",
+      }}
+    />
+  );
+}
+
+// ─── Glow card (mouse-following border glow) ────────────────────────────────
+function GlowCard({
+  children,
+  className = "",
+  innerClassName = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+  innerClassName?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = useCallback((e: ReactMouseEvent<HTMLDivElement>) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    el.style.setProperty("--mouse-x", `${e.clientX - rect.left}px`);
+    el.style.setProperty("--mouse-y", `${e.clientY - rect.top}px`);
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      onMouseMove={handleMouseMove}
+      className={`glow-card ${className}`}
+    >
+      <div className={innerClassName}>{children}</div>
+    </div>
   );
 }
 
@@ -409,14 +490,9 @@ function HeroSection() {
         }}
       />
       {/* Dot grid pattern */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle, rgba(250,250,250,0.04) 1px, transparent 1px)",
-          backgroundSize: "24px 24px",
-        }}
-      />
+      <DotGrid />
+      {/* Animated grid overlay */}
+      <AnimatedGrid />
 
       <div className="relative max-w-4xl mx-auto">
         {/* Badge */}
@@ -876,26 +952,30 @@ function WhySection() {
     {
       icon: Zap,
       color: "#2DD4BF",
-      title: "No LLM required for CRUD",
-      body: "Mem0 and Letta call an LLM for every memory operation, adding latency and token cost. Mnemora does direct database CRUD. State reads are sub-10ms. No LLM overhead, no rate limits.",
+      title: "No LLM in Your CRUD Path",
+      body: "Mem0 and Letta call an LLM for every memory operation, adding latency and token cost. Mnemora does direct database CRUD. State reads are sub-10ms. No LLM overhead, no rate limits, no surprise bills from embedding calls you didn't ask for.",
+      span: true,
     },
     {
       icon: Server,
       color: "#38BDF8",
-      title: "Truly serverless",
+      title: "Serverless-first",
       body: "Every component scales to zero when idle. DynamoDB on-demand, Aurora Serverless v2, Lambda, S3. You pay per request. Estimated idle cost: ~$1/month.",
+      span: false,
     },
     {
       icon: Users,
       color: "#A78BFA",
-      title: "Multi-tenant by design",
+      title: "Multi-tenant by Default",
       body: "Each API key is scoped to a tenant. Each agent gets an isolated namespace. Data is never mixed at the database layer. Built for SaaS products with multiple end-users.",
+      span: false,
     },
     {
       icon: Activity,
       color: "#FB923C",
-      title: "LangGraph native checkpoints",
+      title: "LangGraph Native",
       body: "Drop in MnemoraCheckpointSaver as your LangGraph checkpointer. Each thread_id maps to a Mnemora agent with optimistic locking to prevent concurrent-write data loss.",
+      span: false,
     },
   ];
 
@@ -911,30 +991,31 @@ function WhySection() {
           </h2>
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-4">
-          {reasons.map(({ icon: Icon, color, title, body }) => (
-            <div
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {reasons.map(({ icon: Icon, color, title, body, span }) => (
+            <GlowCard
               key={title}
-              className="group relative rounded-xl p-px bg-gradient-to-b from-[#2DD4BF]/10 via-[#27272A] to-[#A78BFA]/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(45,212,191,0.08)]"
+              className={`group relative rounded-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(45,212,191,0.08)] ${
+                span ? "sm:col-span-2" : ""
+              }`}
+              innerClassName="rounded-[11px] bg-[#111114]/80 backdrop-blur-sm p-6 h-full flex gap-4"
             >
-              <div className="rounded-[11px] bg-[#111114]/80 backdrop-blur-sm p-6 h-full flex gap-4">
-                <div
-                  className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center border mt-0.5"
-                  style={{
-                    background: `${color}15`,
-                    borderColor: `${color}30`,
-                  }}
-                >
-                  <Icon className="w-4 h-4" style={{ color }} />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-[#FAFAFA] mb-1.5">
-                    {title}
-                  </h3>
-                  <p className="text-xs text-[#71717A] leading-relaxed">{body}</p>
-                </div>
+              <div
+                className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center border mt-0.5"
+                style={{
+                  background: `${color}15`,
+                  borderColor: `${color}30`,
+                }}
+              >
+                <Icon className="w-4 h-4" style={{ color }} />
               </div>
-            </div>
+              <div>
+                <h3 className="text-sm font-semibold text-[#FAFAFA] mb-1.5">
+                  {title}
+                </h3>
+                <p className="text-xs text-[#71717A] leading-relaxed">{body}</p>
+              </div>
+            </GlowCard>
           ))}
         </div>
       </div>
@@ -1050,8 +1131,10 @@ function BlogSection() {
 // ─── Pricing ───────────────────────────────────────────────────────────────────
 function PricingSection() {
   return (
-    <section id="pricing" className="py-20 px-4 bg-[#111114]/30">
-      <div className="max-w-5xl mx-auto">
+    <section id="pricing" className="relative py-20 px-4 bg-[#111114]/30 overflow-hidden">
+      {/* Dot grid texture */}
+      <DotGrid />
+      <div className="relative max-w-5xl mx-auto">
         <div className="text-center mb-12">
           <span className="text-xs font-semibold text-[#52525B] uppercase tracking-widest">
             Pricing
@@ -1065,22 +1148,9 @@ function PricingSection() {
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {PRICING_TIERS.map((tier) => (
-            <div
-              key={tier.name}
-              className={`group relative rounded-xl p-px transition-all duration-300 hover:-translate-y-0.5 ${
-                tier.highlight
-                  ? "pricing-shimmer hover:shadow-[0_0_40px_rgba(45,212,191,0.12)]"
-                  : "bg-gradient-to-b from-[#2DD4BF]/10 via-[#27272A] to-[#A78BFA]/10 hover:shadow-[0_0_30px_rgba(45,212,191,0.08)]"
-              }`}
-            >
-              <div
-                className={`rounded-[11px] p-6 flex flex-col relative h-full ${
-                  tier.highlight
-                    ? "bg-gradient-to-b from-[#2DD4BF]/[0.07] to-[#111114]/95 backdrop-blur-sm"
-                    : "bg-[#111114]/80 backdrop-blur-sm"
-                }`}
-              >
+          {PRICING_TIERS.map((tier) => {
+            const innerContent = (
+              <>
                 {tier.highlight && (
                   <div className="absolute -top-px left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-b-md bg-[#2DD4BF] text-[#09090B] text-[10px] font-bold whitespace-nowrap">
                     Most popular
@@ -1132,9 +1202,32 @@ function PricingSection() {
                 >
                   {tier.cta}
                 </a>
+              </>
+            );
+
+            if (tier.highlight) {
+              return (
+                <GlowCard
+                  key={tier.name}
+                  className="group relative rounded-xl transition-all duration-300 hover:-translate-y-0.5 pricing-shimmer hover:shadow-[0_0_40px_rgba(45,212,191,0.12)]"
+                  innerClassName="rounded-[11px] p-6 flex flex-col relative h-full bg-gradient-to-b from-[#2DD4BF]/[0.07] to-[#111114]/95 backdrop-blur-sm"
+                >
+                  {innerContent}
+                </GlowCard>
+              );
+            }
+
+            return (
+              <div
+                key={tier.name}
+                className="group relative rounded-xl p-px transition-all duration-300 hover:-translate-y-0.5 bg-gradient-to-b from-[#2DD4BF]/10 via-[#27272A] to-[#A78BFA]/10 hover:shadow-[0_0_30px_rgba(45,212,191,0.08)]"
+              >
+                <div className="rounded-[11px] p-6 flex flex-col relative h-full bg-[#111114]/80 backdrop-blur-sm">
+                  {innerContent}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Enterprise row */}
@@ -1172,6 +1265,8 @@ function PricingSection() {
 function CTASection() {
   return (
     <section className="py-24 px-4 relative overflow-hidden">
+      {/* Dot grid texture */}
+      <DotGrid />
       {/* Bottom glow */}
       <div
         className="absolute inset-0 pointer-events-none"
