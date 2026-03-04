@@ -12,12 +12,18 @@ import { ShieldAlert, ExternalLink } from "lucide-react";
 
 const ADMIN_GITHUB_USERNAME = "isaacgbc";
 
-// ── Severity badge styles ────────────────────────────────────────────
+// ── Badge styles ────────────────────────────────────────────────────
 
 const SEVERITY_BADGE: Record<string, string> = {
   critical: "bg-red-500/10 text-red-400 border-red-500/20",
   major: "bg-amber-500/10 text-amber-400 border-amber-500/20",
   minor: "bg-[#27272A]/50 text-[#A1A1AA] border-[#3F3F46]",
+};
+
+const TYPE_BADGE: Record<string, string> = {
+  bug: "bg-red-500/10 text-red-400 border-red-500/20",
+  feature: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+  feedback: "bg-blue-500/10 text-blue-400 border-blue-500/20",
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -92,7 +98,7 @@ export default async function AdminPage() {
     );
   }
 
-  const { users, revenue, apiUsage, lambdaMetrics, aurora, dynamoTables, recentBugs, costs } =
+  const { users, revenue, apiUsage, lambdaMetrics, aurora, dynamoTables, recentFeedback, costs } =
     await getAdminData();
 
   const totalCost = costs.reduce((sum, c) => sum + c.estimatedCost, 0);
@@ -369,15 +375,15 @@ export default async function AdminPage() {
         </div>
       </section>
 
-      {/* ── Section 5: Recent Bugs ─────────────────────────────────── */}
-      <section aria-label="Recent bug reports">
+      {/* ── Section 5: Recent Feedback ──────────────────────────────── */}
+      <section aria-label="Recent feedback">
         <h2 className="text-base font-semibold text-[#FAFAFA] mb-3">
-          Recent Bugs
+          Recent Feedback
         </h2>
 
-        {recentBugs.length === 0 ? (
+        {recentFeedback.length === 0 ? (
           <div className="rounded-xl border border-[#27272A] px-5 py-10 text-center">
-            <p className="text-sm text-[#71717A]">No bug reports yet.</p>
+            <p className="text-sm text-[#71717A]">No feedback yet.</p>
           </div>
         ) : (
           <TableWrapper>
@@ -385,52 +391,70 @@ export default async function AdminPage() {
               <tr className="bg-[#111114]">
                 <Th>Date</Th>
                 <Th>User</Th>
+                <Th>Type</Th>
                 <Th>Title</Th>
-                <Th>Severity</Th>
+                <Th>Severity / Rating</Th>
                 <Th>Issue</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#27272A]">
-              {recentBugs.map((bug, idx) => {
-                const severityKey = bug.severity?.toLowerCase() ?? "";
+              {recentFeedback.map((item, idx) => {
+                const typeKey = item.type?.toLowerCase() ?? "feedback";
+                const typeClass =
+                  TYPE_BADGE[typeKey] ?? TYPE_BADGE.feedback;
+                const severityKey = item.severity?.toLowerCase() ?? "";
                 const severityClass =
                   SEVERITY_BADGE[severityKey] ?? SEVERITY_BADGE.minor;
                 return (
                   <tr
-                    key={`${bug.date}-${bug.username}-${idx}`}
+                    key={`${item.date}-${item.username}-${idx}`}
                     className="hover:bg-[#111114]/50 transition-colors duration-150"
                   >
                     <td className="px-4 py-3 font-mono text-xs text-[#71717A] whitespace-nowrap">
-                      {isoToDate(bug.date)}
+                      {isoToDate(item.date)}
                     </td>
                     <td className="px-4 py-3 text-xs text-[#A1A1AA] whitespace-nowrap">
-                      @{bug.username || "unknown"}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-[#FAFAFA] max-w-[240px] truncate">
-                      {bug.title || "—"}
+                      @{item.username || "unknown"}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      {bug.severity ? (
+                      <span
+                        className={cn(
+                          "text-[10px] font-semibold px-2 py-0.5 rounded-full border capitalize",
+                          typeClass
+                        )}
+                      >
+                        {item.type || "feedback"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-[#FAFAFA] max-w-[240px] truncate">
+                      {item.title || "—"}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {item.type === "bug" && item.severity ? (
                         <span
                           className={cn(
                             "text-[10px] font-semibold px-2 py-0.5 rounded-full border capitalize",
                             severityClass
                           )}
                         >
-                          {bug.severity}
+                          {item.severity}
+                        </span>
+                      ) : item.rating != null ? (
+                        <span className="text-xs font-mono text-[#A1A1AA]">
+                          {item.rating}/5
                         </span>
                       ) : (
                         <span className="text-[#52525B] text-xs">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      {bug.githubIssueUrl ? (
+                      {item.githubIssueUrl ? (
                         <a
-                          href={bug.githubIssueUrl}
+                          href={item.githubIssueUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1 text-[#2DD4BF] hover:text-teal-300 transition-colors duration-150 text-xs"
-                          aria-label={`Open GitHub issue for: ${bug.title}`}
+                          aria-label={`Open GitHub issue for: ${item.title}`}
                         >
                           View
                           <ExternalLink className="w-3 h-3" aria-hidden="true" />

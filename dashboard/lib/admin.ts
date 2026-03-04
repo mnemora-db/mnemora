@@ -98,12 +98,14 @@ export interface DynamoTableStat {
   sizeBytes: number;
 }
 
-export interface BugReport {
+export interface FeedbackItem {
   date: string;
   username: string;
+  type: string;
   title: string;
   description: string;
   severity: string | null;
+  rating: number | null;
   githubIssueUrl: string | null;
 }
 
@@ -120,7 +122,7 @@ export interface AdminData {
   lambdaMetrics: LambdaFunctionMetric[];
   aurora: AuroraStatus;
   dynamoTables: DynamoTableStat[];
-  recentBugs: BugReport[];
+  recentFeedback: FeedbackItem[];
   costs: CostEstimate[];
 }
 
@@ -492,35 +494,34 @@ export async function getDynamoTableStats(): Promise<DynamoTableStat[]> {
   return results;
 }
 
-// ── getRecentBugs ─────────────────────────────────────────────────────────────
+// ── getRecentFeedback ─────────────────────────────────────────────────────────
 
 /**
- * Scan the feedback table for bug reports, sorted by creation date descending.
- * Returns the 10 most recent bugs.
+ * Scan the feedback table for ALL feedback items (bugs, features, general),
+ * sorted by creation date descending. Returns the 20 most recent items.
  */
-export async function getRecentBugs(): Promise<BugReport[]> {
+export async function getRecentFeedback(): Promise<FeedbackItem[]> {
   try {
-    const bugs: BugReport[] = [];
+    const items: FeedbackItem[] = [];
     let lastKey: Record<string, AttributeValue> | undefined = undefined;
 
     do {
       const result: ScanCommandOutput = await ddb.send(
         new ScanCommand({
           TableName: FEEDBACK_TABLE,
-          FilterExpression: "#t = :bug",
-          ExpressionAttributeNames: { "#t": "type" },
-          ExpressionAttributeValues: { ":bug": { S: "bug" } },
           ExclusiveStartKey: lastKey,
         })
       );
 
       for (const item of result.Items ?? []) {
-        bugs.push({
+        items.push({
           date: item.created_at?.S ?? "",
           username: item.github_username?.S ?? "",
+          type: item.type?.S ?? "feedback",
           title: item.title?.S ?? "",
           description: item.description?.S ?? "",
           severity: item.severity?.S ?? null,
+          rating: item.rating?.N ? Number(item.rating.N) : null,
           githubIssueUrl: item.github_issue_url?.S ?? null,
         });
       }
@@ -529,16 +530,16 @@ export async function getRecentBugs(): Promise<BugReport[]> {
     } while (lastKey !== undefined);
 
     // Sort by date descending; empty strings sort to the end
-    bugs.sort((a, b) => {
+    items.sort((a, b) => {
       if (a.date === b.date) return 0;
       if (a.date === "") return 1;
       if (b.date === "") return -1;
       return b.date.localeCompare(a.date);
     });
 
-    return bugs.slice(0, 10);
+    return items.slice(0, 20);
   } catch (error) {
-    console.error("[admin] getRecentBugs failed:", error);
+    console.error("[admin] getRecentFeedback failed:", error);
     return [];
   }
 }
@@ -636,14 +637,14 @@ export async function getAdminData(): Promise<AdminData> {
   const users = await getAdminUsers();
 
   // Phase 2: everything that can run in parallel
-  const [revenue, apiUsage, lambdaMetrics, aurora, dynamoTables, recentBugs] =
+  const [revenue, apiUsage, lambdaMetrics, aurora, dynamoTables, recentFeedback] =
     await Promise.all([
       Promise.resolve(getRevenueStats(users)),
       getAggregateApiUsage(users),
       getLambdaMetrics(),
       getAuroraStatus(),
       getDynamoTableStats(),
-      getRecentBugs(),
+      getRecentFeedback(),
     ]);
 
   // Phase 3: cost estimate (pure computation — no async needed)
@@ -661,7 +662,7 @@ export async function getAdminData(): Promise<AdminData> {
     lambdaMetrics,
     aurora,
     dynamoTables,
-    recentBugs,
+    recentFeedback,
     costs,
   };
 }
