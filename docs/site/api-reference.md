@@ -1,6 +1,6 @@
 # API Reference
 
-Base URL: `https://your-api-id.execute-api.us-east-1.amazonaws.com`
+Base URL: `https://0l1lfs30sk.execute-api.us-east-1.amazonaws.com`
 
 All endpoints are prefixed with `/v1/`. The full OpenAPI specification is at [`docs/openapi.yaml`](../openapi.yaml).
 

@@ -277,7 +277,7 @@ npx cdk deploy
 
 This provisions: DynamoDB (on-demand), Aurora Serverless v2 with pgvector, Lambda on ARM64/Graviton, HTTP API Gateway, S3, CloudWatch dashboards, and a Lambda authorizer. Estimated idle cost is ~$15/month. Aurora scales to zero when not in use.
 
-After deploy, the CDK outputs your API Gateway URL. Set it as `MNEMORA_API_URL` or pass it as `base_url` to the client constructor.
+After deploy, the CDK outputs your API Gateway URL. Set it as `MNEMORA_API_URL` to point the SDK at your own deployment.
 
 ---
 

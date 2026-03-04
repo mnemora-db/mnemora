@@ -52,8 +52,8 @@ from mnemora.models import (
     UsageResponse,
 )
 
-_SDK_VERSION = "0.1.0"
-_DEFAULT_BASE_URL = "https://api.mnemora.dev"
+_SDK_VERSION = "0.1.1"
+_DEFAULT_BASE_URL = "https://0l1lfs30sk.execute-api.us-east-1.amazonaws.com"
 
 
 class MnemoraClient:

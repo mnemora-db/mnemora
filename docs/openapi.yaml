@@ -31,10 +31,8 @@ info:
     url: https://www.apache.org/licenses/LICENSE-2.0
 
 servers:
-  - url: https://api.mnemora.dev
+  - url: https://0l1lfs30sk.execute-api.us-east-1.amazonaws.com
     description: Production
-  - url: https://your-api-id.execute-api.us-east-1.amazonaws.com
-    description: Self-hosted (replace with your CDK output)
 
 security:
   - BearerAuth: []

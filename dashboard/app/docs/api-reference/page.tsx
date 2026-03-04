@@ -2,7 +2,7 @@ import { MarkdownRenderer } from "@/components/docs/markdown-renderer";
 
 const content = `# API Reference
 
-Base URL: \`https://api.mnemora.dev\`
+Base URL: \`https://0l1lfs30sk.execute-api.us-east-1.amazonaws.com\`
 
 All endpoints are prefixed with \`/v1/\`.
 
@@ -54,7 +54,7 @@ Authorization: Bearer mnm_your_api_key_here
 Check API availability. No authentication required.
 
 \`\`\`bash
-curl https://api.mnemora.dev/v1/health
+curl https://0l1lfs30sk.execute-api.us-east-1.amazonaws.com/v1/health
 \`\`\`
 
 **Response \`200\`:**
@@ -74,7 +74,7 @@ Working memory is backed by DynamoDB. All operations are sub-10ms.
 Store or overwrite agent state for a session.
 
 \`\`\`bash
-curl -X POST https://api.mnemora.dev/v1/state \\
+curl -X POST https://0l1lfs30sk.execute-api.us-east-1.amazonaws.com/v1/state \\
   -H "Authorization: Bearer mnm_..." \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -103,7 +103,7 @@ curl -X POST https://api.mnemora.dev/v1/state \\
 Retrieve current state for an agent.
 
 \`\`\`bash
-curl https://api.mnemora.dev/v1/state/agent-1 \\
+curl https://0l1lfs30sk.execute-api.us-east-1.amazonaws.com/v1/state/agent-1 \\
   -H "Authorization: Bearer mnm_..."
 \`\`\`
 

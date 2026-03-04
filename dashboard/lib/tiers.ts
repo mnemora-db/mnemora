@@ -69,9 +69,9 @@ export type TierName = (typeof TIER_ORDER)[number];
 export const VALID_TIERS: string[] = [...TIER_ORDER];
 
 export const CREALA_LINKS: Record<string, string> = {
-  starter: "https://app.crea.la/isaacgbc/product/starter-mnemora",
-  pro: "https://app.crea.la/isaacgbc/product/pro-mnemora",
-  scale: "https://app.crea.la/isaacgbc/product/scale-mnemora",
+  starter: "https://pay.crea.la/b/dRm9AS5XV89869yfPM1VN3S",
+  pro: "https://pay.crea.la/b/fZu4gygCz9dc9lKgTQ1VN3U",
+  scale: "https://pay.crea.la/b/4gMdR8fyvgFEcxW4741VN3V",
 };
 
 /** Badge color classes for each tier. */

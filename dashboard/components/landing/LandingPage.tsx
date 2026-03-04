@@ -174,7 +174,7 @@ const PRICING_TIERS = [
     name: "Starter",
     price: 29,
     description: "For early-stage products",
-    href: "https://app.crea.la/isaacgbc/product/starter-mnemora",
+    href: "https://pay.crea.la/b/dRm9AS5XV89869yfPM1VN3S",
     features: [
       "5,000 API calls / day",
       "10 agents",
@@ -189,7 +189,7 @@ const PRICING_TIERS = [
     name: "Pro",
     price: 49,
     description: "For production applications",
-    href: "https://app.crea.la/isaacgbc/product/pro-mnemora",
+    href: "https://pay.crea.la/b/fZu4gygCz9dc9lKgTQ1VN3U",
     features: [
       "25,000 API calls / day",
       "50 agents",
@@ -204,7 +204,7 @@ const PRICING_TIERS = [
     name: "Scale",
     price: 99,
     description: "For high-volume teams",
-    href: "https://app.crea.la/isaacgbc/product/scale-mnemora",
+    href: "https://pay.crea.la/b/4gMdR8fyvgFEcxW4741VN3V",
     features: [
       "50,000 API calls / day",
       "Unlimited agents",
