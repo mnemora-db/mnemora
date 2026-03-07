@@ -6,6 +6,7 @@ import {
   Github,
   ChevronDown,
   Check,
+  CheckCircle,
   X,
   ArrowRight,
   Database,
@@ -569,7 +570,7 @@ function HeroSection() {
           ].map(({ label, color }, i) => (
             <span key={label} className="flex items-center gap-2">
               <span
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-[#27272A] bg-[#111114] text-[#71717A]"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-[#27272A] bg-[#111114] text-[#A1A1AA]"
               >
                 <span
                   className="w-1.5 h-1.5 rounded-full"
@@ -595,6 +596,7 @@ const INTEGRATIONS_ROW_1 = [
   { name: "CrewAI", desc: "Shared memory", icon: Users },
   { name: "AutoGen", desc: "State store", icon: Database },
   { name: "OpenAI Agents SDK", desc: "Tool integration", icon: Code2 },
+  { name: "HubSpot CRM", desc: "Full CRM sync", icon: Database },
 ];
 
 const INTEGRATIONS_ROW_2 = [
@@ -688,7 +690,7 @@ function ProblemSection() {
           <h2 className="text-2xl sm:text-3xl font-bold text-[#FAFAFA] mt-3 tracking-tight">
             AI agents are stateless by default
           </h2>
-          <p className="text-[#71717A] text-sm mt-3 max-w-lg mx-auto">
+          <p className="text-[#A1A1AA] text-sm mt-3 max-w-lg mx-auto">
             To give them memory, developers stitch together four databases,
             four clients, four billing accounts — with no unified query layer.
           </p>
@@ -704,7 +706,7 @@ function ProblemSection() {
                     <Icon className="w-4 h-4 text-[#52525B] shrink-0" />
                     <h3 className="text-sm font-semibold text-[#FAFAFA]">{title}</h3>
                   </div>
-                  <p className="text-xs text-[#71717A] leading-relaxed">{body}</p>
+                  <p className="text-xs text-[#A1A1AA] leading-relaxed">{body}</p>
                 </div>
               </div>
               {i < problems.length - 1 && (
@@ -765,7 +767,7 @@ function SolutionSection() {
           <h2 className="text-2xl sm:text-3xl font-bold text-[#FAFAFA] mt-3 tracking-tight">
             One API. Four memory types.
           </h2>
-          <p className="text-[#71717A] text-sm mt-3 max-w-lg mx-auto">
+          <p className="text-[#A1A1AA] text-sm mt-3 max-w-lg mx-auto">
             AWS-native serverless infrastructure. No LLM required for CRUD
             operations.
           </p>
@@ -797,7 +799,7 @@ function SolutionSection() {
                   <h3 className="text-sm font-semibold text-[#FAFAFA] mb-2">
                     {name}
                   </h3>
-                  <p className="text-xs text-[#71717A] leading-relaxed">{desc}</p>
+                  <p className="text-xs text-[#A1A1AA] leading-relaxed">{desc}</p>
                 </div>
               </div>
             ) : (
@@ -824,7 +826,7 @@ function SolutionSection() {
                 <h3 className="text-sm font-semibold text-[#FAFAFA] mb-2">
                   {name}
                 </h3>
-                <p className="text-xs text-[#71717A] leading-relaxed">{desc}</p>
+                <p className="text-xs text-[#A1A1AA] leading-relaxed">{desc}</p>
               </GlowCard>
             )
           )}
@@ -894,7 +896,7 @@ function CodeSection() {
           <h2 className="text-2xl sm:text-3xl font-bold text-[#FAFAFA] mt-3 tracking-tight">
             Your first agent memory in 15 lines
           </h2>
-          <p className="text-[#71717A] text-sm mt-3">
+          <p className="text-[#A1A1AA] text-sm mt-3">
             Install{" "}
             <code className="font-mono text-[#2DD4BF] bg-[#2DD4BF]/8 px-1.5 py-0.5 rounded text-xs">
               pip install mnemora
@@ -984,7 +986,7 @@ function ComparisonSection() {
           <h2 className="text-2xl sm:text-3xl font-bold text-[#FAFAFA] mt-3 tracking-tight">
             How Mnemora compares
           </h2>
-          <p className="text-[#71717A] text-sm mt-3 max-w-md mx-auto">
+          <p className="text-[#A1A1AA] text-sm mt-3 max-w-md mx-auto">
             Concrete data. No hype.
           </p>
         </div>
@@ -1000,13 +1002,13 @@ function ComparisonSection() {
                   Mnemora
                   <div className="absolute bottom-0 left-2 right-2 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(45,212,191,0.6), transparent)", boxShadow: "0 1px 8px rgba(45,212,191,0.3)" }} />
                 </th>
-                <th className="px-4 py-3.5 text-center text-xs font-medium text-[#71717A] bg-[#0D0D10]">
+                <th className="px-4 py-3.5 text-center text-xs font-medium text-[#A1A1AA] bg-[#0D0D10]">
                   Mem0
                 </th>
-                <th className="px-4 py-3.5 text-center text-xs font-medium text-[#71717A] bg-[#0D0D10]">
+                <th className="px-4 py-3.5 text-center text-xs font-medium text-[#A1A1AA] bg-[#0D0D10]">
                   Zep
                 </th>
-                <th className="px-4 py-3.5 text-center text-xs font-medium text-[#71717A] bg-[#0D0D10]">
+                <th className="px-4 py-3.5 text-center text-xs font-medium text-[#A1A1AA] bg-[#0D0D10]">
                   Letta
                 </th>
               </tr>
@@ -1106,7 +1108,7 @@ function WhySection() {
           </div>
           <div>
             <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">{heroCard.title}</h3>
-            <p className="text-sm text-[#71717A] leading-relaxed max-w-2xl">{heroCard.body}</p>
+            <p className="text-sm text-[#A1A1AA] leading-relaxed max-w-2xl">{heroCard.body}</p>
           </div>
         </GlowCard>
 
@@ -1125,7 +1127,7 @@ function WhySection() {
                 <Icon className="w-4 h-4" style={{ color }} />
               </div>
               <h3 className="text-sm font-semibold text-[#FAFAFA] mb-1.5">{title}</h3>
-              <p className="text-xs text-[#71717A] leading-relaxed">{body}</p>
+              <p className="text-xs text-[#A1A1AA] leading-relaxed">{body}</p>
             </GlowCard>
           ))}
         </div>
@@ -1203,7 +1205,7 @@ function UseCasesSection() {
           <h2 className="text-2xl sm:text-3xl font-bold text-[#FAFAFA] mt-3 tracking-tight">
             Built for every agent type
           </h2>
-          <p className="mt-3 text-sm text-[#71717A] max-w-lg mx-auto">
+          <p className="mt-3 text-sm text-[#A1A1AA] max-w-lg mx-auto">
             From customer support to autonomous research — Mnemora adapts to
             your agent&apos;s memory needs.
           </p>
@@ -1220,7 +1222,7 @@ function UseCasesSection() {
                 <Icon className="w-4 h-4 text-[#2DD4BF]" />
               </div>
               <h3 className="text-sm font-semibold text-[#FAFAFA] mb-1.5">{title}</h3>
-              <p className="text-xs text-[#71717A] leading-relaxed mb-3 flex-1">
+              <p className="text-xs text-[#A1A1AA] leading-relaxed mb-3 flex-1">
                 {description}
               </p>
               <div className="flex flex-wrap gap-1.5 mb-3">
@@ -1238,6 +1240,129 @@ function UseCasesSection() {
               </p>
             </GlowCard>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Real Results ───────────────────────────────────────────────────────────────
+const EVAL_METRICS = [
+  { name: "Relevance", before: "3.8", after: "5.0", delta: "+32%" },
+  { name: "Specificity", before: "1.0", after: "4.8", delta: "+380%" },
+  { name: "Helpfulness", before: "2.8", after: "4.9", delta: "+75%" },
+  { name: "Personalization", before: "1.1", after: "4.9", delta: "+345%" },
+];
+
+function RealResultsSection() {
+  return (
+    <section className="py-20 px-4 bg-[#111114]/30">
+      <style>{`
+        @keyframes score-glow {
+          0%, 100% { text-shadow: 0 0 20px rgba(45,212,191,0.3); }
+          50% { text-shadow: 0 0 40px rgba(45,212,191,0.5), 0 0 80px rgba(45,212,191,0.2); }
+        }
+        .overall-score-after {
+          animation: score-glow 3s ease-in-out infinite;
+        }
+        .overall-score-before {
+          text-decoration: line-through;
+          text-decoration-color: rgba(82,82,91,0.5);
+        }
+      `}</style>
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-14">
+          <span className="text-xs font-semibold text-[#52525B] uppercase tracking-widest">
+            Proven Impact
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#FAFAFA] mt-3 tracking-tight">
+            From generic responses to personalized support
+          </h2>
+          <p className="text-[#A1A1AA] text-sm mt-3 max-w-xl mx-auto">
+            We connected HubSpot CRM to an AI agent powered by Mnemora and measured the difference.
+          </p>
+        </div>
+
+        {/* Eval Score Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-14">
+          {EVAL_METRICS.map(({ name, before, after, delta }) => (
+            <GlowCard
+              key={name}
+              className="hover:-translate-y-0.5"
+              innerClassName="p-5 text-center"
+            >
+              <p className="text-xs font-medium text-[#A1A1AA] mb-3 uppercase tracking-wider">
+                {name}
+              </p>
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <span className="text-2xl font-bold text-[#52525B]">{before}</span>
+                <ArrowRight className="w-4 h-4 text-[#3F3F46]" />
+                <span className="text-2xl font-bold text-[#2DD4BF]">{after}</span>
+              </div>
+              <span className="text-xs font-semibold text-[#22C55E]">{delta}</span>
+            </GlowCard>
+          ))}
+        </div>
+
+        {/* Overall Score */}
+        <div className="text-center mb-14">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <span className="text-sm text-[#A1A1AA]">Overall quality:</span>
+            <span className="text-3xl sm:text-4xl font-bold text-[#52525B] overall-score-before">2.2</span>
+            <ArrowRight className="w-5 h-5 text-[#3F3F46]" />
+            <span className="text-3xl sm:text-4xl font-bold text-[#2DD4BF] overall-score-after">4.9</span>
+          </div>
+          <p className="text-xs text-[#A1A1AA] max-w-md mx-auto">
+            Measured across 10 real customer support and sales scenarios using Claude as an evaluator.
+          </p>
+        </div>
+
+        {/* Side-by-side comparison */}
+        <div className="grid md:grid-cols-2 gap-4 mb-6">
+          {/* Without Mnemora */}
+          <div className="rounded-xl bg-[#18181B] border-l-2 border-[#EF4444]/30 p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <X className="w-4 h-4 text-[#EF4444]" />
+              <span className="text-sm font-semibold text-[#FAFAFA]">Without Mnemora</span>
+            </div>
+            <p className="text-sm text-[#A1A1AA] leading-relaxed">
+              &ldquo;I&apos;d be happy to help with your API integration issue. Could you provide your account email or ticket number? What specific issue were you experiencing?&rdquo;
+            </p>
+          </div>
+
+          {/* With Mnemora */}
+          <div className="rounded-xl bg-[#18181B] border-l-2 border-[#2DD4BF]/30 p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <CheckCircle className="w-4 h-4 text-[#2DD4BF]" />
+              <span className="text-sm font-semibold text-[#FAFAFA]">With Mnemora</span>
+            </div>
+            <p className="text-sm text-[#A1A1AA] leading-relaxed">
+              &ldquo;I can see you&apos;ve had a few API-related items with us recently. Are you referring to the API rate limiting issue where you were getting 429 errors in production? That&apos;s currently marked as high priority and still being worked on.&rdquo;
+            </p>
+          </div>
+        </div>
+
+        <p className="text-center text-xs text-[#A1A1AA] mb-14 max-w-lg mx-auto">
+          The agent with Mnemora searched HubSpot CRM data stored in semantic memory to find relevant context — no extra API calls needed.
+        </p>
+
+        {/* Integration badge strip */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-[#A1A1AA]">Tested with</span>
+            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#2DD4BF]/30 bg-[#2DD4BF]/[0.08] text-[#2DD4BF] text-xs font-semibold">
+              <Database className="w-3.5 h-3.5" />
+              HubSpot CRM
+            </span>
+          </div>
+          <span className="text-xs text-[#52525B]">Salesforce, Odoo, Zoho — coming soon</span>
+          <Link
+            href="/blog"
+            className="text-xs text-[#2DD4BF] hover:underline flex items-center gap-1"
+          >
+            See the full eval results <ArrowRight className="w-3 h-3" />
+          </Link>
         </div>
       </div>
     </section>
@@ -1282,7 +1407,7 @@ function FAQSection() {
               </button>
               {open === i && (
                 <div className="px-5 pb-5 border-t border-[#27272A]/50 pt-3">
-                  <p className="text-sm text-[#71717A] leading-relaxed">
+                  <p className="text-sm text-[#A1A1AA] leading-relaxed">
                     {faq.a}
                   </p>
                 </div>
@@ -1336,7 +1461,7 @@ function BlogSection() {
                 <h3 className="text-sm font-semibold text-[#FAFAFA] leading-snug group-hover:text-[#2DD4BF] transition-colors">
                   {post.title}
                 </h3>
-                <p className="text-xs text-[#71717A] leading-relaxed flex-1">
+                <p className="text-xs text-[#A1A1AA] leading-relaxed flex-1">
                   {post.description}
                 </p>
                 <div className="flex items-center gap-1.5 text-[10px] text-[#52525B]">
@@ -1369,7 +1494,7 @@ function PricingSection() {
           <h2 className="text-2xl sm:text-3xl font-bold text-[#FAFAFA] mt-3 tracking-tight">
             Simple, transparent pricing
           </h2>
-          <p className="text-[#71717A] text-sm mt-3 max-w-md mx-auto">
+          <p className="text-[#A1A1AA] text-sm mt-3 max-w-md mx-auto">
             Start free. Scale as you grow. No surprises.
           </p>
         </div>
@@ -1388,7 +1513,7 @@ function PricingSection() {
                   <h3 className="text-sm font-semibold text-[#FAFAFA] mb-1">
                     {tier.name}
                   </h3>
-                  <p className="text-xs text-[#71717A] mb-3">{tier.description}</p>
+                  <p className="text-xs text-[#A1A1AA] mb-3">{tier.description}</p>
                   <div className="flex items-baseline gap-1">
                     {tier.price === 0 ? (
                       <span className="text-2xl font-bold text-[#FAFAFA]">
@@ -1464,7 +1589,7 @@ function PricingSection() {
               <h3 className="text-sm font-semibold text-[#FAFAFA] mb-1">
                 Enterprise
               </h3>
-              <p className="text-xs text-[#71717A] max-w-lg">
+              <p className="text-xs text-[#A1A1AA] max-w-lg">
                 Unlimited everything, custom SLA, SSO/SAML, VPC peering, and
                 dedicated infrastructure for organizations with custom needs.
               </p>
@@ -1506,7 +1631,7 @@ function CTASection() {
         <h2 className="text-2xl sm:text-3xl font-bold text-[#FAFAFA] tracking-tight mb-4">
           Ready to give your agents memory?
         </h2>
-        <p className="text-[#71717A] text-sm mb-8 max-w-md mx-auto leading-relaxed">
+        <p className="text-[#A1A1AA] text-sm mb-8 max-w-md mx-auto leading-relaxed">
           Start in under 5 minutes. No infrastructure to configure. No servers
           to manage. Just memory that works.
         </p>
@@ -1651,6 +1776,8 @@ export default function LandingPage() {
         <WhySection />
         <SectionDivider />
         <UseCasesSection />
+        <SectionDivider />
+        <RealResultsSection />
         <SectionDivider />
         <FAQSection />
         <SectionDivider />
