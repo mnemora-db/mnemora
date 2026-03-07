@@ -806,7 +806,7 @@ function SolutionSection() {
               <GlowCard
                 key={name}
                 className="hover:-translate-y-0.5"
-                innerClassName="p-6"
+                innerClassName="p-6 rounded-[11px] bg-[#111114]"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-9 h-9 rounded-lg bg-[#18181B] border border-[#27272A] flex items-center justify-center">
@@ -1247,123 +1247,95 @@ function UseCasesSection() {
 }
 
 // ─── Real Results ───────────────────────────────────────────────────────────────
-const EVAL_METRICS = [
-  { name: "Relevance", before: "3.8", after: "5.0", delta: "+32%" },
-  { name: "Specificity", before: "1.0", after: "4.8", delta: "+380%" },
-  { name: "Helpfulness", before: "2.8", after: "4.9", delta: "+75%" },
-  { name: "Personalization", before: "1.1", after: "4.9", delta: "+345%" },
-];
-
 function RealResultsSection() {
   return (
-    <section className="py-20 px-4 bg-[#111114]/30">
+    <section className="py-20 px-4">
       <style>{`
         @keyframes score-glow {
           0%, 100% { text-shadow: 0 0 20px rgba(45,212,191,0.3); }
           50% { text-shadow: 0 0 40px rgba(45,212,191,0.5), 0 0 80px rgba(45,212,191,0.2); }
         }
-        .overall-score-after {
+        .headline-stat {
           animation: score-glow 3s ease-in-out infinite;
         }
-        .overall-score-before {
-          text-decoration: line-through;
-          text-decoration-color: rgba(82,82,91,0.5);
-        }
       `}</style>
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-14">
+        <div className="text-center mb-10">
           <span className="text-xs font-semibold text-[#52525B] uppercase tracking-widest">
             Proven Impact
           </span>
           <h2 className="text-2xl sm:text-3xl font-bold text-[#FAFAFA] mt-3 tracking-tight">
             From generic responses to personalized support
           </h2>
-          <p className="text-[#A1A1AA] text-sm mt-3 max-w-xl mx-auto">
-            We connected HubSpot CRM to an AI agent powered by Mnemora and measured the difference.
+        </div>
+
+        {/* Headline stat */}
+        <div className="text-center mb-4">
+          <span className="text-5xl sm:text-6xl font-bold text-[#2DD4BF] headline-stat">+123%</span>
+          <p className="text-sm text-[#A1A1AA] mt-3">
+            overall quality improvement
+          </p>
+          <p className="text-xs text-[#52525B] mt-1">
+            Measured across 10 real customer scenarios with HubSpot CRM data
           </p>
         </div>
 
-        {/* Eval Score Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-14">
-          {EVAL_METRICS.map(({ name, before, after, delta }) => (
-            <GlowCard
-              key={name}
-              className="hover:-translate-y-0.5"
-              innerClassName="p-5 text-center"
-            >
-              <p className="text-xs font-medium text-[#A1A1AA] mb-3 uppercase tracking-wider">
-                {name}
-              </p>
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <span className="text-2xl font-bold text-[#52525B]">{before}</span>
-                <ArrowRight className="w-4 h-4 text-[#3F3F46]" />
-                <span className="text-2xl font-bold text-[#2DD4BF]">{after}</span>
-              </div>
-              <span className="text-xs font-semibold text-[#22C55E]">{delta}</span>
-            </GlowCard>
+        {/* Inline metrics strip */}
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mb-16 text-sm">
+          {[
+            { name: "Relevance", delta: "+32%" },
+            { name: "Specificity", delta: "+380%" },
+            { name: "Helpfulness", delta: "+75%" },
+            { name: "Personalization", delta: "+345%" },
+          ].map(({ name, delta }, i, arr) => (
+            <span key={name} className="flex items-center gap-1.5">
+              <span className="text-[#A1A1AA]">{name}</span>
+              <span className="text-[#2DD4BF] font-semibold">{delta}</span>
+              {i < arr.length - 1 && <span className="text-[#27272A] ml-3">·</span>}
+            </span>
           ))}
         </div>
 
-        {/* Overall Score */}
-        <div className="text-center mb-14">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <span className="text-sm text-[#A1A1AA]">Overall quality:</span>
-            <span className="text-3xl sm:text-4xl font-bold text-[#52525B] overall-score-before">2.2</span>
-            <ArrowRight className="w-5 h-5 text-[#3F3F46]" />
-            <span className="text-3xl sm:text-4xl font-bold text-[#2DD4BF] overall-score-after">4.9</span>
-          </div>
-          <p className="text-xs text-[#A1A1AA] max-w-md mx-auto">
-            Measured across 10 real customer support and sales scenarios using Claude as an evaluator.
-          </p>
-        </div>
+        {/* Customer query */}
+        <p className="text-xs text-[#52525B] text-center mb-4">
+          Customer asks: <span className="text-[#A1A1AA] italic">&ldquo;I spoke to someone last week about my API issue, any updates?&rdquo;</span>
+        </p>
 
         {/* Side-by-side comparison */}
-        <div className="grid md:grid-cols-2 gap-4 mb-6">
+        <div className="grid md:grid-cols-2 gap-4 mb-4">
           {/* Without Mnemora */}
-          <div className="rounded-xl bg-[#18181B] border-l-2 border-[#EF4444]/30 p-6">
+          <div className="rounded-xl bg-[#18181B]/60 border-l-2 border-[#EF4444]/20 p-6">
             <div className="flex items-center gap-2 mb-4">
-              <X className="w-4 h-4 text-[#EF4444]" />
+              <X className="w-4 h-4 text-[#EF4444]/60" />
               <span className="text-sm font-semibold text-[#FAFAFA]">Without Mnemora</span>
             </div>
-            <p className="text-sm text-[#A1A1AA] leading-relaxed">
-              &ldquo;I&apos;d be happy to help with your API integration issue. Could you provide your account email or ticket number? What specific issue were you experiencing?&rdquo;
-            </p>
+            <div className="pl-4 border-l border-[#27272A]">
+              <p className="text-sm text-[#52525B] leading-relaxed italic">
+                &ldquo;I&apos;d be happy to help with your API integration issue. Could you provide your account email or ticket number? What specific issue were you experiencing?&rdquo;
+              </p>
+            </div>
           </div>
 
           {/* With Mnemora */}
-          <div className="rounded-xl bg-[#18181B] border-l-2 border-[#2DD4BF]/30 p-6">
+          <div className="rounded-xl bg-[#18181B]/60 border-l-2 border-[#2DD4BF]/30 p-6">
             <div className="flex items-center gap-2 mb-4">
               <CheckCircle className="w-4 h-4 text-[#2DD4BF]" />
               <span className="text-sm font-semibold text-[#FAFAFA]">With Mnemora</span>
             </div>
-            <p className="text-sm text-[#A1A1AA] leading-relaxed">
-              &ldquo;I can see you&apos;ve had a few API-related items with us recently. Are you referring to the API rate limiting issue where you were getting 429 errors in production? That&apos;s currently marked as high priority and still being worked on.&rdquo;
-            </p>
+            <div className="pl-4 border-l border-[#2DD4BF]/20">
+              <p className="text-sm text-[#A1A1AA] leading-relaxed italic">
+                &ldquo;I can see you&apos;ve had a few API-related items with us recently. Are you referring to the API rate limiting issue where you were getting 429 errors in production? That&apos;s currently marked as high priority and still being worked on.&rdquo;
+              </p>
+            </div>
           </div>
         </div>
 
-        <p className="text-center text-xs text-[#A1A1AA] mb-14 max-w-lg mx-auto">
-          The agent with Mnemora searched HubSpot CRM data stored in semantic memory to find relevant context — no extra API calls needed.
+        {/* Footer line */}
+        <p className="text-center text-xs text-[#52525B]">
+          <Database className="w-3 h-3 inline-block mr-1 text-[#2DD4BF]/60 relative -top-px" />
+          Powered by HubSpot CRM data synced to Mnemora semantic memory
         </p>
-
-        {/* Integration badge strip */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-[#A1A1AA]">Tested with</span>
-            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#2DD4BF]/30 bg-[#2DD4BF]/[0.08] text-[#2DD4BF] text-xs font-semibold">
-              <Database className="w-3.5 h-3.5" />
-              HubSpot CRM
-            </span>
-          </div>
-          <span className="text-xs text-[#52525B]">Salesforce, Odoo, Zoho — coming soon</span>
-          <Link
-            href="/blog"
-            className="text-xs text-[#2DD4BF] hover:underline flex items-center gap-1"
-          >
-            See the full eval results <ArrowRight className="w-3 h-3" />
-          </Link>
-        </div>
       </div>
     </section>
   );
@@ -1765,6 +1737,8 @@ export default function LandingPage() {
       <main>
         <HeroSection />
         <IntegrationsSection />
+        <RealResultsSection />
+        <SectionDivider />
         <ProblemSection />
         <SectionDivider />
         <SolutionSection />
@@ -1776,8 +1750,6 @@ export default function LandingPage() {
         <WhySection />
         <SectionDivider />
         <UseCasesSection />
-        <SectionDivider />
-        <RealResultsSection />
         <SectionDivider />
         <FAQSection />
         <SectionDivider />

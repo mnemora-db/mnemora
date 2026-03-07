@@ -109,7 +109,7 @@ html {
   position: relative;
   border-radius: 0.75rem;
   padding: 1px;
-  background: linear-gradient(to bottom, rgba(45,212,191,0.10), #27272A, rgba(167,139,250,0.10));
+  background: linear-gradient(to bottom, rgba(45,212,191,0.05), #27272A, rgba(167,139,250,0.05));
 }
 
 .glow-card::before {
