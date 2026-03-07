@@ -12,6 +12,7 @@ import {
   Settings,
   User,
   ShieldCheck,
+  Plug,
   Menu,
   X,
 } from "lucide-react";
@@ -32,6 +33,7 @@ const navItems: NavItem[] = [
   { label: "Usage", href: "/dashboard/usage", icon: BarChart2 },
   { label: "API Keys", href: "/dashboard/api-keys", icon: KeyRound },
   { label: "Billing", href: "/dashboard/billing", icon: CreditCard },
+  { label: "Integrations", href: "/dashboard/integrations", icon: Plug },
   {
     label: "Docs",
     href: "/docs",

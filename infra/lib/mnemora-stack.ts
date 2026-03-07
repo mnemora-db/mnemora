@@ -47,14 +47,14 @@ export class MnemoraStack extends cdk.Stack {
 
     // -------------------------------------------------------
     // VPC — public, private, and isolated subnets
-    // Public: NAT gateway lives here
-    // Private: Lambda functions (egress via NAT for Bedrock, etc.)
+    // No NAT Gateway — all AWS service access via VPC endpoints.
+    // Private: Lambda functions (reach AWS services via endpoints)
     // Isolated: Aurora (no internet access)
     // -------------------------------------------------------
     this.vpc = new ec2.Vpc(this, 'Vpc', {
       vpcName: `mnemora-vpc-${stage}`,
       maxAzs: 2,
-      natGateways: isProd ? 2 : 1,
+      natGateways: 0,
       subnetConfiguration: [
         {
           cidrMask: 24,
@@ -74,12 +74,26 @@ export class MnemoraStack extends cdk.Stack {
       ],
     });
 
-    // Gateway endpoints — free, keeps DynamoDB/S3 traffic off NAT
+    // Gateway endpoints (free) — DynamoDB and S3 traffic stays on AWS backbone
     this.vpc.addGatewayEndpoint('DynamoDbEndpoint', {
       service: ec2.GatewayVpcEndpointAwsService.DYNAMODB,
     });
     this.vpc.addGatewayEndpoint('S3Endpoint', {
       service: ec2.GatewayVpcEndpointAwsService.S3,
+    });
+
+    // Interface endpoints — replace NAT Gateway for AWS API calls.
+    // Bedrock Runtime: semantic/episodic/unified Lambdas call Titan embeddings.
+    // Secrets Manager: all VPC Lambdas fetch Aurora credentials on cold start.
+    this.vpc.addInterfaceEndpoint('BedrockRuntimeEndpoint', {
+      service: ec2.InterfaceVpcEndpointAwsService.BEDROCK_RUNTIME,
+      subnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      privateDnsEnabled: true,
+    });
+    this.vpc.addInterfaceEndpoint('SecretsManagerEndpoint', {
+      service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
+      subnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      privateDnsEnabled: true,
     });
 
     // -------------------------------------------------------

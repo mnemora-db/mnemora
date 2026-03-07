@@ -471,6 +471,54 @@ export default async function AdminPage() {
         )}
       </section>
 
+      {/* ── Section 5.5: Integrations ────────────────────────────── */}
+      <section aria-label="Integrations">
+        <h2 className="text-base font-semibold text-[#FAFAFA] mb-3">
+          Integrations
+        </h2>
+        <TableWrapper>
+          <thead>
+            <tr className="bg-[#111114]">
+              <Th>Connector</Th>
+              <Th>Status</Th>
+              <Th right>Users Connected</Th>
+              <Th right>Objects Synced</Th>
+              <Th>Last Sync</Th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#27272A]">
+            <tr className="hover:bg-[#111114]/50 transition-colors duration-150">
+              <td className="px-4 py-3 text-sm text-[#FAFAFA]">🟠 HubSpot</td>
+              <td className="px-4 py-3"><span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Available</span></td>
+              <td className="px-4 py-3 text-right font-mono text-xs text-[#A1A1AA]">0</td>
+              <td className="px-4 py-3 text-right font-mono text-xs text-[#A1A1AA]">0</td>
+              <td className="px-4 py-3 text-xs text-[#71717A]">—</td>
+            </tr>
+            <tr className="hover:bg-[#111114]/50 transition-colors duration-150">
+              <td className="px-4 py-3 text-sm text-[#FAFAFA]">☁️ Salesforce</td>
+              <td className="px-4 py-3"><span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-[#27272A]/50 text-[#71717A] border-[#3F3F46]">Coming Soon</span></td>
+              <td className="px-4 py-3 text-right font-mono text-xs text-[#52525B]">—</td>
+              <td className="px-4 py-3 text-right font-mono text-xs text-[#52525B]">—</td>
+              <td className="px-4 py-3 text-xs text-[#52525B]">—</td>
+            </tr>
+            <tr className="hover:bg-[#111114]/50 transition-colors duration-150">
+              <td className="px-4 py-3 text-sm text-[#FAFAFA]">🟣 Odoo</td>
+              <td className="px-4 py-3"><span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-[#27272A]/50 text-[#71717A] border-[#3F3F46]">Coming Soon</span></td>
+              <td className="px-4 py-3 text-right font-mono text-xs text-[#52525B]">—</td>
+              <td className="px-4 py-3 text-right font-mono text-xs text-[#52525B]">—</td>
+              <td className="px-4 py-3 text-xs text-[#52525B]">—</td>
+            </tr>
+            <tr className="hover:bg-[#111114]/50 transition-colors duration-150">
+              <td className="px-4 py-3 text-sm text-[#FAFAFA]">🔴 Zoho CRM</td>
+              <td className="px-4 py-3"><span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-[#27272A]/50 text-[#71717A] border-[#3F3F46]">Coming Soon</span></td>
+              <td className="px-4 py-3 text-right font-mono text-xs text-[#52525B]">—</td>
+              <td className="px-4 py-3 text-right font-mono text-xs text-[#52525B]">—</td>
+              <td className="px-4 py-3 text-xs text-[#52525B]">—</td>
+            </tr>
+          </tbody>
+        </TableWrapper>
+      </section>
+
       {/* ── Section 6: Estimated Costs ─────────────────────────────── */}
       <section aria-label="Estimated AWS costs">
         <h2 className="text-base font-semibold text-[#FAFAFA] mb-3">

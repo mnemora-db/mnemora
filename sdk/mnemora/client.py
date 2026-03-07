@@ -425,7 +425,7 @@ class MnemoraClient:
         agent_id: str | None = None,
         namespace: str | None = None,
         top_k: int = 10,
-        threshold: float = 0.7,
+        threshold: float = 0.1,
         metadata_filter: dict[str, Any] | None = None,
     ) -> list[SemanticResponse]:
         """Search semantic memory by natural-language query.

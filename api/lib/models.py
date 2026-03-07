@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
 from typing import Any, Optional
 
 from pydantic import BaseModel, Field, field_validator
@@ -275,7 +274,7 @@ class UnifiedSearchRequest(BaseModel):
         default=10, ge=1, le=100, description="Maximum number of results to return"
     )
     threshold: float = Field(
-        default=0.5,
+        default=0.1,
         ge=0.0,
         le=1.0,
         description="Minimum cosine similarity for semantic results",
