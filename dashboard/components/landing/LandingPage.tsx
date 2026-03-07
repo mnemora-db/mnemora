@@ -317,36 +317,6 @@ const PRICING_TIERS = [
   },
 ];
 
-const BLOG_POSTS = [
-  {
-    slug: "how-to-give-your-ai-agent-persistent-memory",
-    title: "How to Give Your AI Agent Persistent Memory in 5 Minutes",
-    description:
-      "AI agents forget everything between invocations. Here's how to add persistent memory to any Python agent in under 5 minutes with 4 types of memory.",
-    tag: "Tutorial",
-    readTime: "6 min",
-    date: "2026-03-04",
-  },
-  {
-    slug: "mnemora-vs-mem0-vs-zep-vs-letta",
-    title: "Mnemora vs Mem0 vs Zep vs Letta: AI Agent Memory Compared",
-    description:
-      "An honest comparison of four AI agent memory platforms — architecture, features, pricing, and when to use each.",
-    tag: "Comparison",
-    readTime: "8 min",
-    date: "2026-03-03",
-  },
-  {
-    slug: "why-your-ai-agent-forgets-everything",
-    title: "Why Your AI Agent Forgets Everything (And How to Fix It)",
-    description:
-      "The goldfish problem: agents are stateless by default. Here's the mental model for the four types of memory every production agent needs.",
-    tag: "Concepts",
-    readTime: "5 min",
-    date: "2026-03-02",
-  },
-];
-
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 function CellIcon({ value }: { value: CellValue }) {
   if (value === true)
@@ -657,8 +627,8 @@ function IntegrationsSection() {
   );
 }
 
-// ─── Problem ───────────────────────────────────────────────────────────────────
-function ProblemSection() {
+// ─── Problem + Solution ─────────────────────────────────────────────────────
+function ProblemSolutionSection() {
   const problems = [
     {
       icon: Database,
@@ -680,48 +650,6 @@ function ProblemSection() {
     },
   ];
 
-  return (
-    <section className="py-20 px-4">
-      <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-12">
-          <span className="text-xs font-semibold text-[#52525B] uppercase tracking-widest">
-            The problem
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#FAFAFA] mt-3 tracking-tight">
-            AI agents are stateless by default
-          </h2>
-          <p className="text-[#A1A1AA] text-sm mt-3 max-w-lg mx-auto">
-            To give them memory, developers stitch together four databases,
-            four clients, four billing accounts — with no unified query layer.
-          </p>
-        </div>
-
-        <div className="max-w-2xl mx-auto">
-          {problems.map(({ icon: Icon, num, title, body }, i) => (
-            <div key={title}>
-              <div className="flex items-start gap-5 py-6">
-                <span className="text-2xl font-bold text-[#2DD4BF]/20 font-mono shrink-0 mt-0.5">{num}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2.5 mb-1.5">
-                    <Icon className="w-4 h-4 text-[#52525B] shrink-0" />
-                    <h3 className="text-sm font-semibold text-[#FAFAFA]">{title}</h3>
-                  </div>
-                  <p className="text-xs text-[#A1A1AA] leading-relaxed">{body}</p>
-                </div>
-              </div>
-              {i < problems.length - 1 && (
-                <div className="border-t border-[#27272A]/50" />
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── Solution ──────────────────────────────────────────────────────────────────
-function SolutionSection() {
   const types = [
     {
       icon: Zap,
@@ -758,9 +686,44 @@ function SolutionSection() {
   ];
 
   return (
-    <section id="features" className="py-20 px-4 bg-[#111114]/30">
+    <section id="features" className="py-20 px-4">
       <div className="max-w-5xl mx-auto">
+        {/* Problem */}
         <div className="text-center mb-12">
+          <span className="text-xs font-semibold text-[#52525B] uppercase tracking-widest">
+            The problem
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#FAFAFA] mt-3 tracking-tight">
+            AI agents are stateless by default
+          </h2>
+          <p className="text-[#A1A1AA] text-sm mt-3 max-w-lg mx-auto">
+            To give them memory, developers stitch together four databases,
+            four clients, four billing accounts — with no unified query layer.
+          </p>
+        </div>
+
+        <div className="max-w-2xl mx-auto mb-16">
+          {problems.map(({ icon: Icon, num, title, body }, i) => (
+            <div key={title}>
+              <div className="flex items-start gap-5 py-6">
+                <span className="text-2xl font-bold text-[#2DD4BF]/20 font-mono shrink-0 mt-0.5">{num}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2.5 mb-1.5">
+                    <Icon className="w-4 h-4 text-[#52525B] shrink-0" />
+                    <h3 className="text-sm font-semibold text-[#FAFAFA]">{title}</h3>
+                  </div>
+                  <p className="text-xs text-[#A1A1AA] leading-relaxed">{body}</p>
+                </div>
+              </div>
+              {i < problems.length - 1 && (
+                <div className="border-t border-[#27272A]/50" />
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Solution */}
+        <div className="text-center mb-4">
           <span className="text-xs font-semibold text-[#52525B] uppercase tracking-widest">
             The solution
           </span>
@@ -768,12 +731,18 @@ function SolutionSection() {
             One API. Four memory types.
           </h2>
           <p className="text-[#A1A1AA] text-sm mt-3 max-w-lg mx-auto">
-            AWS-native serverless infrastructure. No LLM required for CRUD
-            operations.
+            Serverless-first. Every component scales to zero. No LLM required for CRUD operations.
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-4">
+        <div className="flex justify-center mb-12">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#2DD4BF]/30 bg-[#2DD4BF]/[0.08] text-[#2DD4BF] text-xs font-semibold">
+            <Zap className="w-3 h-3" />
+            No LLM in your CRUD path — direct database ops, sub-10ms reads
+          </div>
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-4 mb-8">
           {types.map(({ icon: Icon, name, badge, badgeColor, desc, soon }) =>
             soon ? (
               <div
@@ -830,6 +799,22 @@ function SolutionSection() {
               </GlowCard>
             )
           )}
+        </div>
+
+        {/* Feature pills */}
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {[
+            { icon: Users, label: "Multi-tenant by default" },
+            { icon: Activity, label: "LangGraph native checkpoints" },
+          ].map(({ icon: Icon, label }) => (
+            <span
+              key={label}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#27272A] bg-[#111114] text-xs text-[#A1A1AA]"
+            >
+              <Icon className="w-3.5 h-3.5 text-[#2DD4BF]" />
+              {label}
+            </span>
+          ))}
         </div>
       </div>
     </section>
@@ -1045,92 +1030,6 @@ function ComparisonSection() {
         <p className="text-center text-xs text-[#3F3F46] mt-4">
           Data based on public documentation as of 2025. Subject to change.
         </p>
-      </div>
-    </section>
-  );
-}
-
-// ─── Why Mnemora ───────────────────────────────────────────────────────────────
-function WhySection() {
-  const reasons = [
-    {
-      icon: Zap,
-      color: "#2DD4BF",
-      title: "No LLM in Your CRUD Path",
-      body: "Mem0 and Letta call an LLM for every memory operation, adding latency and token cost. Mnemora does direct database CRUD. State reads are sub-10ms. No LLM overhead, no rate limits, no surprise bills from embedding calls you didn't ask for.",
-    },
-    {
-      icon: Server,
-      color: "#38BDF8",
-      title: "Serverless-first",
-      body: "Every component scales to zero when idle. DynamoDB on-demand, Aurora Serverless v2, Lambda, S3. You pay per request.",
-    },
-    {
-      icon: Users,
-      color: "#A78BFA",
-      title: "Multi-tenant by Default",
-      body: "Each API key scoped to a tenant. Data is never mixed at the database layer. Built for SaaS.",
-    },
-    {
-      icon: Activity,
-      color: "#FB923C",
-      title: "LangGraph Native",
-      body: "Drop-in MnemoraCheckpointSaver with optimistic locking. Zero config.",
-    },
-  ];
-
-  const heroCard = reasons[0];
-  const HeroIcon = heroCard.icon;
-  const rest = reasons.slice(1);
-
-  return (
-    <section className="py-20 px-4">
-      <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-12">
-          <span className="text-xs font-semibold text-[#52525B] uppercase tracking-widest">
-            Why Mnemora
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#FAFAFA] mt-3 tracking-tight">
-            Designed different by design
-          </h2>
-        </div>
-
-        {/* Hero card — full width */}
-        <GlowCard
-          className="group relative rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(45,212,191,0.12)] mb-4"
-          innerClassName="rounded-[11px] bg-[#111114]/80 backdrop-blur-sm p-8 h-full flex gap-5"
-        >
-          <div
-            className="w-11 h-11 rounded-lg shrink-0 flex items-center justify-center border mt-0.5"
-            style={{ background: `${heroCard.color}15`, borderColor: `${heroCard.color}30` }}
-          >
-            <HeroIcon className="w-5 h-5" style={{ color: heroCard.color }} />
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">{heroCard.title}</h3>
-            <p className="text-sm text-[#A1A1AA] leading-relaxed max-w-2xl">{heroCard.body}</p>
-          </div>
-        </GlowCard>
-
-        {/* 3-column row */}
-        <div className="grid sm:grid-cols-3 gap-4">
-          {rest.map(({ icon: Icon, color, title, body }) => (
-            <GlowCard
-              key={title}
-              className="group relative rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(45,212,191,0.12)]"
-              innerClassName="rounded-[11px] bg-[#111114]/80 backdrop-blur-sm p-6 h-full"
-            >
-              <div
-                className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center border mb-4"
-                style={{ background: `${color}15`, borderColor: `${color}30` }}
-              >
-                <Icon className="w-4 h-4" style={{ color }} />
-              </div>
-              <h3 className="text-sm font-semibold text-[#FAFAFA] mb-1.5">{title}</h3>
-              <p className="text-xs text-[#A1A1AA] leading-relaxed">{body}</p>
-            </GlowCard>
-          ))}
-        </div>
       </div>
     </section>
   );
@@ -1392,66 +1291,6 @@ function FAQSection() {
   );
 }
 
-// ─── Blog ──────────────────────────────────────────────────────────────────────
-function BlogSection() {
-  return (
-    <section id="blog" className="py-20 px-4">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex items-end justify-between mb-10">
-          <div>
-            <span className="text-xs font-semibold text-[#52525B] uppercase tracking-widest">
-              Blog
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-bold text-[#FAFAFA] mt-2 tracking-tight">
-              From the team
-            </h2>
-          </div>
-          <Link
-            href="/blog"
-            className="text-xs text-[#2DD4BF] hover:underline flex items-center gap-1"
-          >
-            View all posts <ArrowRight className="w-3 h-3" />
-          </Link>
-        </div>
-
-        <div className="grid sm:grid-cols-3 gap-4">
-          {BLOG_POSTS.map((post) => (
-            <Link
-              key={post.slug}
-              href={`/blog/${post.slug}`}
-              className="group block"
-            >
-              <article className="rounded-xl border border-[#27272A] bg-[#111114] p-5 flex flex-col gap-3 hover:border-[#3F3F46] transition-colors duration-200 h-full">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-[#2DD4BF]/30 bg-[#2DD4BF]/[0.08] text-[#2DD4BF]">
-                    {post.tag}
-                  </span>
-                  <span className="text-[10px] text-[#52525B]">
-                    {post.readTime} read
-                  </span>
-                </div>
-                <h3 className="text-sm font-semibold text-[#FAFAFA] leading-snug group-hover:text-[#2DD4BF] transition-colors">
-                  {post.title}
-                </h3>
-                <p className="text-xs text-[#A1A1AA] leading-relaxed flex-1">
-                  {post.description}
-                </p>
-                <div className="flex items-center gap-1.5 text-[10px] text-[#52525B]">
-                  <span>{post.date}</span>
-                  <span className="text-[#3F3F46]">·</span>
-                  <span className="text-[#2DD4BF] group-hover:underline">
-                    Read more →
-                  </span>
-                </div>
-              </article>
-            </Link>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 // ─── Pricing ───────────────────────────────────────────────────────────────────
 function PricingSection() {
   return (
@@ -1687,7 +1526,7 @@ function Footer() {
                 Company
               </p>
               <div className="space-y-2.5">
-                <a href="#blog" className="block text-[#52525B] hover:text-[#A1A1AA] transition-colors">Blog</a>
+                <a href="/blog" className="block text-[#52525B] hover:text-[#A1A1AA] transition-colors">Blog</a>
                 <a href="#" className="block text-[#52525B] hover:text-[#A1A1AA] transition-colors">Privacy</a>
                 <a href="#" className="block text-[#52525B] hover:text-[#A1A1AA] transition-colors">Terms</a>
               </div>
@@ -1737,25 +1576,19 @@ export default function LandingPage() {
       <main>
         <HeroSection />
         <IntegrationsSection />
-        <RealResultsSection />
-        <SectionDivider />
-        <ProblemSection />
-        <SectionDivider />
-        <SolutionSection />
-        <SectionDivider />
         <CodeSection />
+        <SectionDivider />
+        <ProblemSolutionSection />
         <SectionDivider />
         <ComparisonSection />
         <SectionDivider />
-        <WhySection />
+        <RealResultsSection />
         <SectionDivider />
         <UseCasesSection />
         <SectionDivider />
-        <FAQSection />
-        <SectionDivider />
-        <BlogSection />
-        <SectionDivider />
         <PricingSection />
+        <SectionDivider />
+        <FAQSection />
         <SectionDivider />
         <CTASection />
       </main>
