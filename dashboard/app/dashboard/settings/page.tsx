@@ -139,6 +139,29 @@ export default async function SettingsPage() {
         </div>
       </section>
 
+      {/* Legal */}
+      <section aria-label="Legal">
+        <div className="rounded-md border border-[#27272A] bg-[#18181B] px-5 py-5">
+          <p className="text-xs font-medium text-[#71717A] uppercase tracking-wide mb-4">
+            Legal
+          </p>
+          <div className="flex flex-wrap gap-4">
+            <Link
+              href="/terms"
+              className="text-sm text-[#2DD4BF] hover:text-[#2DD4BF]/80 transition-colors"
+            >
+              Terms of Service &rarr;
+            </Link>
+            <Link
+              href="/privacy"
+              className="text-sm text-[#2DD4BF] hover:text-[#2DD4BF]/80 transition-colors"
+            >
+              Privacy Policy &rarr;
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Danger zone */}
       <section aria-label="Danger zone">
         <div className="rounded-md border border-red-500/20 bg-[#18181B] px-5 py-5">

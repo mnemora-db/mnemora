@@ -1527,8 +1527,8 @@ function Footer() {
               </p>
               <div className="space-y-2.5">
                 <a href="/blog" className="block text-[#52525B] hover:text-[#A1A1AA] transition-colors">Blog</a>
-                <a href="#" className="block text-[#52525B] hover:text-[#A1A1AA] transition-colors">Privacy</a>
-                <a href="#" className="block text-[#52525B] hover:text-[#A1A1AA] transition-colors">Terms</a>
+                <a href="/privacy" className="block text-[#52525B] hover:text-[#A1A1AA] transition-colors">Privacy</a>
+                <a href="/terms" className="block text-[#52525B] hover:text-[#A1A1AA] transition-colors">Terms</a>
               </div>
             </div>
           </div>
