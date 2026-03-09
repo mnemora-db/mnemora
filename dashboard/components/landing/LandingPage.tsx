@@ -609,9 +609,9 @@ function IntegrationsSection() {
           </h2>
         </div>
       </div>
-      <div className="relative">
-        <div className="absolute left-0 top-0 bottom-0 w-20 sm:w-32 z-10 pointer-events-none" style={{ background: "linear-gradient(to right, #09090B, transparent)" }} />
-        <div className="absolute right-0 top-0 bottom-0 w-20 sm:w-32 z-10 pointer-events-none" style={{ background: "linear-gradient(to left, #09090B, transparent)" }} />
+      <div className="relative overflow-hidden">
+        <div className="absolute left-0 top-0 bottom-0 z-10 pointer-events-none" style={{ width: 80, background: "linear-gradient(to right, #09090B, transparent)" }} />
+        <div className="absolute right-0 top-0 bottom-0 z-10 pointer-events-none" style={{ width: 80, background: "linear-gradient(to left, #09090B, transparent)" }} />
         <div className="marquee-track flex gap-4 mb-4" style={{ animation: "marquee-left 28s linear infinite", width: "max-content" }}>
           {[...INTEGRATIONS_ROW_1, ...INTEGRATIONS_ROW_1].map((item, i) => (
             <MarqueePill key={`r1-${i}`} {...item} />
